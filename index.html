@@ -1,0 +1,1130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KNP Visitor Management System</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts - Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Custom styles for Inter font and general body styling */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Light gray background */
+            color: #1f2937; /* Dark gray text */
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .container {
+            max-width: 1280px; /* Equivalent to mx-auto max-w-screen-xl */
+            margin-left: auto;
+            margin-right: auto;
+            padding: 1rem; /* Equivalent to p-4 */
+        }
+        /* Basic button styling for consistency if not fully covered by Tailwind */
+        button {
+            cursor: pointer;
+        }
+        /* Table responsive overflow */
+        .overflow-x-auto {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch; /* For smooth scrolling on iOS */
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gray-100 font-sans text-gray-900">
+
+    <!-- Login Screen -->
+    <div id="login-screen" class="flex items-center justify-center min-h-screen bg-gray-100 p-4">
+        <div class="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
+            <h2 class="text-3xl font-bold mb-6 text-center text-green-700">KNP-VMS Login</h2>
+            <form id="loginForm" class="space-y-4">
+                <div>
+                    <label for="loginEmail" class="block text-sm font-medium text-gray-700">Email:</label>
+                    <!-- Default email for testing -->
+                    <input type="email" id="loginEmail" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500" placeholder="your@email.com" value="test@example.com" required />
+                </div>
+                <div>
+                    <label for="loginPassword" class="block text-sm font-medium text-gray-700">Password:</label>
+                    <!-- Default password for testing -->
+                    <input type="password" id="loginPassword" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500" value="password123" required />
+                </div>
+                <button type="submit" class="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition duration-150 ease-in-out">
+                    Login
+                </button>
+            </form>
+            <p id="login-message" class="mt-4 text-center text-sm font-medium text-red-600"></p>
+        </div>
+    </div>
+
+    <!-- Main Application Content -->
+    <div id="main-app-content" class="flex-grow hidden">
+        <nav class="bg-green-800 p-4 shadow-md">
+            <div class="container mx-auto flex flex-wrap justify-between items-center">
+                <div class="text-white text-2xl font-bold">KNP-VMS</div>
+                <div class="flex-grow md:flex-grow-0 mt-2 md:mt-0">
+                    <ul class="flex flex-wrap space-x-4 text-white text-lg">
+                        <li>
+                            <button id="navRegisterVisitor" class="py-2 px-4 rounded-md transition duration-300 ease-in-out hover:bg-green-700">
+                                Register Visitor
+                            </button>
+                        </li>
+                        <li>
+                            <button id="navPrincipalBooking" class="py-2 px-4 rounded-md transition duration-300 ease-in-out hover:bg-green-700">
+                                Principal Booking
+                            </button>
+                        </li>
+                        <li>
+                            <button id="navPrincipalApproval" class="py-2 px-4 rounded-md transition duration-300 ease-in-out hover:bg-green-700">
+                                Principal Approval
+                            </button>
+                        </li>
+                        <li>
+                            <button id="navDashboard" class="py-2 px-4 rounded-md transition duration-300 ease-in-out hover:bg-green-700">
+                                Dashboard
+                            </button>
+                        </li>
+                        <li>
+                            <button id="navVisitorLogs" class="py-2 px-4 rounded-md transition duration-300 ease-in-out hover:bg-green-700">
+                                Visitor Logs
+                            </button>
+                        </li>
+                        <li>
+                            <button id="navCreateStaffUser" class="py-2 px-4 rounded-md transition duration-300 ease-in-out hover:bg-green-700">
+                                Create Staff User
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+                <div class="text-white text-lg mt-2 md:mt-0">
+                    <button id="logoutButton" class="bg-red-600 hover:bg-red-700 py-2 px-4 rounded-md transition duration-300 ease-in-out">
+                        Logout (<span id="loggedInUserEmail">Admin</span>)
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <div id="app-content" class="container mx-auto p-4 mt-8 flex-grow">
+            <!-- Content will be rendered here by JavaScript -->
+        </div>
+
+        <!-- Display current userId for multi-user app identification -->
+        <div id="user-id-display" class="fixed bottom-4 left-4 bg-gray-800 text-white p-2 rounded-md text-sm shadow-lg hidden">
+            User ID: <span id="current-user-id"></span>
+        </div>
+    </div>
+
+    <!-- Privacy Policy Modal -->
+    <div id="privacyModal" class="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg shadow-xl p-8 m-4 max-w-2xl w-full relative">
+            <button id="closePrivacyModal" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-2xl font-bold">&times;</button>
+            <h3 class="text-2xl font-bold mb-4 text-green-700 text-center">KNP Visitor Data Privacy Policy</h3>
+            <div class="text-gray-700 space-y-4 text-sm">
+                <p>This system collects your Full Name, Phone Number, ID Number, Time of Visit (Check-in and Check-out), and Purpose of Visit for security and record-keeping purposes of the Kisii National Polytechnic.</p>
+                <p>Your data will be processed strictly in accordance with the <strong>Data Protection Act, 2019, of Kenya</strong>.</p>
+                <p class="font-semibold">Key principles:</p>
+                <ul class="list-disc list-inside ml-4 space-y-2">
+                    <li><strong>Lawfulness and Fairness:</strong> Data is collected for legitimate purposes only.</li>
+                    <li><strong>Purpose Limitation:</strong> Data will only be used for visitor management and security.</li>
+                    <li><strong>Data Minimization:</strong> Only necessary data is collected.</li>
+                    <li><strong>Confidentiality:</strong> Your data will be protected from unauthorized access and will not be shared with unauthorized third parties.</li>
+                    <li><strong>Storage Limitation:</strong> Data will be retained for a necessary period as per KNP's policy for security audits and then securely disposed of.</li>
+                </ul>
+                <p>By proceeding with check-in, you consent to this data collection and processing as described. For more details or to exercise your data rights, please contact the KNP administration.</p>
+            </div>
+            <div class="mt-6 text-center">
+                <button id="modalCloseButton" class="bg-green-600 text-white py-2 px-6 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition duration-150 ease-in-out">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, query, where, onSnapshot, doc, updateDoc, getDoc, deleteDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Global variables for Firebase instances and app state
+        let db = null;
+        let auth = null;
+        let userId = null;
+        let userEmail = null; // To store logged-in user's email
+        let isAuthReady = false;
+        let currentPage = 'principalBooking'; // Default page after login
+        let appContent = null; // Declare appContent globally
+        let isLoggedIn = false; // Track login state
+
+        // Data states (equivalent to React's useState)
+        let bookedAppointments = [];
+        let pendingApprovals = []; // This will now hold the currently filtered approvals
+        let registeredVisitors = []; // Only currently checked-in visitors
+        let visitorLogsData = []; // All checked-out visitors
+        let message = '';
+        let principalApprovalFilter = 'Pending'; // Default filter for principal approval tab
+
+        // IMPORTANT: When running locally with live-server, replace the following lines
+        // with your actual Firebase project configuration from the Firebase Console.
+        // Make sure to get the 'appId' from your firebaseConfig object.
+        const firebaseConfig = {
+  apiKey: "AIzaSyAthVRHTOjGf9NLSVu3o80TS1GMmPYUNaE",
+  authDomain: "knp-vms-app.firebaseapp.com",
+  projectId: "knp-vms-app",
+  storageBucket: "knp-vms-app.firebasestorage.app",
+  messagingSenderId: "906443986354",
+  appId: "1:906443986354:web:9e54514af8f765df9940ab",
+  measurementId: "G-GJKFBDR7N8"
+};
+        const appId = firebaseConfig.appId; // This line correctly derives appId from your firebaseConfig
+
+        // To store the unsubscribe function for Firestore listeners
+        // Ensure these are initialized to null globally
+        let unsubscribePrincipalApprovals = null;
+        let unsubscribeRegisteredVisitors = null;
+        let unsubscribeVisitorLogs = null;
+        let unsubscribeBookedAppointments = null;
+
+        // Function to update the message display (for general app messages)
+        function updateMessage(msg) {
+            message = msg;
+            const messageElement = document.getElementById('app-message');
+            if (messageElement) {
+                messageElement.textContent = message;
+                messageElement.className = "mt-4 text-center text-sm font-medium text-green-600"; // Reset class
+                if (msg.includes("Error") || msg.includes("Failed")) {
+                    messageElement.className = "mt-4 text-center text-sm font-medium text-red-600";
+                }
+            }
+        }
+
+        // Function to update the login screen message
+        function updateLoginMessage(msg) {
+            const loginMessageElement = document.getElementById('login-message');
+            if (loginMessageElement) {
+                loginMessageElement.textContent = msg;
+            }
+        }
+
+        // Function to render the login form
+        function renderLoginForm() {
+            document.getElementById('login-screen').classList.remove('hidden');
+            document.getElementById('main-app-content').classList.add('hidden');
+            updateLoginMessage(''); // Clear previous login messages
+            attachLoginEventListeners();
+        }
+
+        // Function to render the main application content
+        function renderMainApp() {
+            console.log("Executing renderMainApp(). Hiding login, showing main content."); // ADDED LOG
+            const loginScreen = document.getElementById('login-screen');
+            const mainAppContent = document.getElementById('main-app-content');
+
+            if (loginScreen && mainAppContent) {
+                loginScreen.classList.add('hidden');
+                mainAppContent.classList.remove('hidden');
+                // Update logged-in user email in the navbar
+                document.getElementById('loggedInUserEmail').textContent = userEmail || 'User';
+                renderContent(); // Render the specific page content
+                setupNavListeners(); // Ensure navigation listeners are set up after login
+                console.log("UI elements updated. Login screen hidden, main app visible."); // ADDED LOG
+            } else {
+                console.error("renderMainApp: Could not find login-screen or main-app-content elements."); // ADDED LOG
+            }
+        }
+
+        // Function to render the current page content (within the main app)
+        function renderContent() {
+            let html = '';
+
+            switch (currentPage) {
+                case 'registerVisitor':
+                    html = `
+                        <div class="p-6 bg-white rounded-lg shadow-md max-w-lg mx-auto">
+                            <h2 class="text-2xl font-bold mb-4 text-center text-green-700">Register Visitor</h2>
+                            <form id="registerVisitorForm" class="space-y-4">
+                                <div>
+                                    <label for="fullName" class="block text-sm font-medium text-gray-700">Full Name:</label>
+                                    <input type="text" id="fullName" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500" placeholder="e.g., Tilen Okoth Kungu" required />
+                                </div>
+                                <div>
+                                    <label for="phoneNumber" class="block text-sm font-medium text-gray-700">Phone Number (e.g., 07XXXXXXXXXX):</label>
+                                    <input type="tel" id="phoneNumber" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500" placeholder="e.g., 0712345678" required />
+                                    <p class="text-xs text-gray-500 mt-1">Format: 07XXXXXXXXXX or 2547XXXXXXXXXX</p>
+                                </div>
+                                <div>
+                                    <label for="vehicleNumberPlate" class="block text-sm font-medium text-gray-700">Vehicle Number Plate (Optional):</label>
+                                    <input type="text" id="vehicleNumberPlate" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500" placeholder="e.g., KBC 123X" />
+                                </div>
+                                <div>
+                                    <label for="idNumber" class="block text-sm font-medium text-gray-700">ID Number (National ID/Passport):</label>
+                                    <input type="text" id="idNumber" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500" placeholder="e.g., 12345678" required />
+                                </div>
+                                <div>
+                                    <label for="purposeOfVisit" class="block text-sm font-medium text-gray-700">Purpose of Visit:</label>
+                                    <select id="purposeOfVisit" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500" required>
+                                        <option value="">-- Select Purpose --</option>
+                                        <option value="Meeting">Meeting</option>
+                                        <option value="Delivery">Delivery</option>
+                                        <option value="Interview">Interview</option>
+                                        <option value="Maintenance">Maintenance</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="hostNameDepartment" class="block text-sm font-medium text-gray-700">Host Name / Department (Optional):</label>
+                                    <input type="text" id="hostNameDepartment" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500" placeholder="e.g., Dean of Studies Office" />
+                                </div>
+                                <div class="flex items-center">
+                                    <input type="checkbox" id="dataPrivacyTerms" class="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded" required />
+                                    <label for="dataPrivacyTerms" class="ml-2 block text-sm text-gray-900">I agree to the <a href="#" id="showPrivacyTerms" class="text-blue-600 hover:underline">data privacy terms</a>.</label>
+                                </div>
+                                <button type="submit" class="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition duration-150 ease-in-out">
+                                    Register Visitor
+                                </button>
+                            </form>
+                            <div class="mt-6">
+                                <h3 class="text-xl font-semibold mb-3 text-green-700">Registered Visitors:</h3>
+                                <div id="registeredVisitorsList" class="space-y-2">
+                                    ${registeredVisitors.length === 0 ? '<p class="text-gray-600">No visitors registered yet.</p>' :
+                                        registeredVisitors.map(visitor => `
+                                            <div class="bg-gray-50 p-3 rounded-md shadow-sm flex justify-between items-center">
+                                                <span>${visitor.name} - Vehicle: <span class="font-semibold">${visitor.vehiclePlate || 'N/A'}</span></span>
+                                            </div>
+                                        `).join('')
+                                    }
+                                </div>
+                            </div>
+                            <p id="app-message" class="mt-4 text-center text-sm font-medium text-green-600"></p>
+                        </div>
+                    `;
+                    break;
+                case 'principalBooking':
+                    html = `
+                        <div class="p-6 bg-white rounded-lg shadow-md max-w-lg mx-auto">
+                            <h2 class="text-2xl font-bold mb-4 text-center text-green-700">Book Principal Appointment</h2>
+                            <form id="bookAppointmentForm" class="space-y-4">
+                                <div>
+                                    <label for="name" class="block text-sm font-medium text-gray-700">Your Name:</label>
+                                    <input type="text" id="name" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500" placeholder="e.g., Tilen Kungu" required />
+                                </div>
+                                <div>
+                                    <label for="email" class="block text-sm font-medium text-gray-700">Your Email:</label>
+                                    <input type="email" id="email" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500" placeholder="e.g., name@example.com" required />
+                                </div>
+                                <div>
+                                    <label for="idNumberBooking" class="block text-sm font-medium text-gray-700">Your ID Number:</label>
+                                    <input type="text" id="idNumberBooking" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500" placeholder="e.g., 12345678" required />
+                                </div>
+                                <div>
+                                    <label for="phone" class="block text-sm font-medium text-gray-700">Your Phone Number:</label>
+                                    <input type="tel" id="phone" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500" placeholder="e.g., 07XXXXXXXXXX or +254XXXXXXXXX" required />
+                                </div>
+                                <div>
+                                    <label for="purpose" class="block text-sm font-medium text-gray-700">Purpose of Meeting:</label>
+                                    <textarea id="purpose" rows="3" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500" required></textarea>
+                                </div>
+                                <div>
+                                    <label for="date" class="block text-sm font-medium text-gray-700">Desired Date:</label>
+                                    <input type="date" id="date" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500" required />
+                                </div>
+                                <div>
+                                    <label for="time" class="block text-sm font-medium text-gray-700">Desired Time:</label>
+                                    <input type="time" id="time" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500" required />
+                                </div>
+                                <button type="submit" class="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition duration-150 ease-in-out">
+                                    Book Appointment
+                                </button>
+                            </form>
+                            <p id="app-message" class="mt-4 text-center text-sm font-medium text-green-600"></p>
+
+                            <div class="mt-6">
+                                <h3 class="text-xl font-semibold mb-3 text-green-700">Your Booked Appointments:</h3>
+                                <div id="bookedAppointmentsList" class="space-y-2">
+                                    ${bookedAppointments.length === 0 ? '<p class="text-gray-600">No appointments booked yet.</p>' :
+                                        bookedAppointments.map(appointment => `
+                                            <div class="bg-gray-50 p-3 rounded-md shadow-sm flex justify-between items-center">
+                                                <span>${appointment.name} - ${appointment.date} ${appointment.time} (<span class="${appointment.status === 'Pending' ? 'text-yellow-700' : appointment.status === 'Approved' ? 'text-green-700' : 'text-red-700'}">${appointment.status}</span>)</span>
+                                            </div>
+                                        `).join('')
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    break;
+                case 'principalApproval':
+                    html = `
+                        <div id="principalApprovalContainer" class="p-6 bg-white rounded-lg shadow-md max-w-2xl mx-auto">
+                            <h2 class="text-2xl font-bold mb-4 text-center text-green-700">Principal Approval Dashboard</h2>
+                            <div class="flex justify-center space-x-4 mb-4">
+                                <button data-filter="Pending" class="filter-btn py-2 px-4 rounded-md transition duration-300 ease-in-out ${principalApprovalFilter === 'Pending' ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}">Pending</button>
+                                <button data-filter="Approved" class="filter-btn py-2 px-4 rounded-md transition duration-300 ease-in-out ${principalApprovalFilter === 'Approved' ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}">Approved</button>
+                                <button data-filter="Rejected" class="filter-btn py-2 px-4 rounded-md transition duration-300 ease-in-out ${principalApprovalFilter === 'Rejected' ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}">Rejected</button>
+                                <button data-filter="All" class="filter-btn py-2 px-4 rounded-md transition duration-300 ease-in-out ${principalApprovalFilter === 'All' ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}">All</button>
+                            </div>
+                            ${pendingApprovals.length === 0 ? `<p class="text-center text-gray-600">No ${principalApprovalFilter.toLowerCase()} appointments.</p>` : `
+                                <div class="overflow-x-auto">
+                                    <table class="min-w-full bg-white rounded-lg shadow-md">
+                                        <thead>
+                                            <tr class="bg-green-100 text-green-800 uppercase text-sm leading-normal">
+                                                <th class="py-3 px-6 text-left">Name</th>
+                                                <th class="py-3 px-6 text-left">Email</th>
+                                                <th class="py-3 px-6 text-left">ID Number</th>
+                                                <th class="py-3 px-6 text-left">Phone</th>
+                                                <th class="py-3 px-6 text-left">Purpose</th>
+                                                <th class="py-3 px-6 text-left">Date</th>
+                                                <th class="py-3 px-6 text-left">Time</th>
+                                                <th class="py-3 px-6 text-left">Status</th>
+                                                <th class="py-3 px-6 text-center">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="text-gray-700 text-sm font-light" id="pendingApprovalsTableBody">
+                                            ${pendingApprovals.map(appointment => `
+                                                <tr class="border-b border-gray-200 hover:bg-gray-100">
+                                                    <td class="py-3 px-6 text-left whitespace-nowrap">${appointment.name}</td>
+                                                    <td class="py-3 px-6 text-left">${appointment.email}</td>
+                                                    <td class="py-3 px-6 text-left">${appointment.idNumberBooking}</td>
+                                                    <td class="py-3 px-6 text-left">${appointment.phone}</td>
+                                                    <td class="py-3 px-6 text-left">${appointment.purpose}</td>
+                                                    <td class="py-3 px-6 text-left">${appointment.date}</td>
+                                                    <td class="py-3 px-6 text-left">${appointment.time}</td>
+                                                    <td class="py-3 px-6 text-left">
+                                                        <span class="py-1 px-3 rounded-full text-xs ${appointment.status === 'Pending' ? 'bg-yellow-200 text-yellow-800' : appointment.status === 'Approved' ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'}">
+                                                            ${appointment.status}
+                                                        </span>
+                                                    </td>
+                                                    <td class="py-3 px-6 text-center">
+                                                        <div class="flex item-center justify-center space-x-2">
+                                                            ${appointment.status === 'Pending' ? `
+                                                                <button data-id="${appointment.id}" data-status="Approved" class="approve-btn bg-green-500 hover:bg-green-600 text-white py-1 px-3 rounded-md text-xs transition duration-150 ease-in-out">
+                                                                    Approve
+                                                                </button>
+                                                                <button data-id="${appointment.id}" data-status="Rejected" class="reject-btn bg-red-500 hover:bg-red-600 text-white py-1 px-3 rounded-md text-xs transition duration-150 ease-in-out">
+                                                                    Reject
+                                                                </button>
+                                                            ` : `
+                                                                <span class="text-gray-500 text-xs">No actions</span>
+                                                            `}
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            `).join('')}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            `}
+                            <p id="app-message" class="mt-4 text-center text-sm font-medium text-green-600"></p>
+                        </div>
+                    `;
+                    break;
+                case 'dashboard':
+                    // Calculate visitors today
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0); // Normalize to start of day
+
+                    const visitorsTodayCheckedIn = registeredVisitors.filter(visitor => {
+                        const checkInDate = new Date(visitor.checkInTime);
+                        checkInDate.setHours(0, 0, 0, 0);
+                        return checkInDate.getTime() === today.getTime();
+                    }).length;
+
+                    const visitorsTodayCheckedOut = visitorLogsData.filter(log => {
+                        const checkInDate = new Date(log.checkInTime);
+                        checkInDate.setHours(0, 0, 0, 0);
+                        return checkInDate.getTime() === today.getTime();
+                    }).length;
+
+                    const visitorsTodayCount = visitorsTodayCheckedIn + visitorsTodayCheckedOut;
+
+                    html = `
+                        <div class="p-6 bg-white rounded-lg shadow-md max-w-4xl mx-auto">
+                            <h2 class="text-2xl font-bold mb-4 text-center text-green-700">Welcome to Your Dashboard, admin!</h2>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                                <div class="bg-blue-100 p-6 rounded-lg shadow-md text-center">
+                                    <h3 class="text-xl font-semibold text-blue-800">Visitors Today</h3>
+                                    <p class="text-4xl font-bold text-blue-600 mt-2">${visitorsTodayCount}</p>
+                                </div>
+                                <div class="bg-purple-100 p-6 rounded-lg shadow-md text-center">
+                                    <h3 class="text-xl font-semibold text-purple-800">Currently Checked-in</h3>
+                                    <p class="text-4xl font-bold text-purple-600 mt-2">${registeredVisitors.length}</p>
+                                </div>
+                            </div>
+                            <h3 class="text-xl font-semibold mb-3 text-green-700">Currently Checked-in Visitors:</h3>
+                            ${registeredVisitors.length === 0 ? '<p class="text-gray-600 text-center">No visitors currently checked-in.</p>' : `
+                                <div class="overflow-x-auto">
+                                    <table class="min-w-full bg-white rounded-lg shadow-md">
+                                        <thead>
+                                            <tr class="bg-green-100 text-green-800 uppercase text-sm leading-normal">
+                                                <th class="py-3 px-6 text-left">Name</th>
+                                                <th class="py-3 px-6 text-left">ID Number</th>
+                                                <th class="py-3 px-6 text-left">Phone</th>
+                                                <th class="py-3 px-6 text-left">Vehicle Plate</th>
+                                                <th class="py-3 px-6 text-left">Purpose</th>
+                                                <th class="py-3 px-6 text-left">Host</th>
+                                                <th class="py-3 px-6 text-left">Check-in Time</th>
+                                                <th class="py-3 px-6 text-center">Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="text-gray-700 text-sm font-light">
+                                            ${registeredVisitors.map(visitor => `
+                                                <tr class="border-b border-gray-200 hover:bg-gray-100">
+                                                    <td class="py-3 px-6 text-left whitespace-nowrap">${visitor.name}</td>
+                                                    <td class="py-3 px-6 text-left">${visitor.idNumber}</td>
+                                                    <td class="py-3 px-6 text-left">${visitor.phone}</td>
+                                                    <td class="py-3 px-6 text-left font-semibold">${visitor.vehiclePlate || 'N/A'}</td>
+                                                    <td class="py-3 px-6 text-left">${visitor.purpose}</td>
+                                                    <td class="py-3 px-6 text-left">${visitor.host}</td>
+                                                    <td class="py-3 px-6 text-left">${new Date(visitor.checkInTime).toLocaleString()}</td>
+                                                    <td class="py-3 px-6 text-center">
+                                                        <button data-id="${visitor.id}" class="checkout-btn bg-red-500 hover:bg-red-600 text-white py-1 px-3 rounded-md text-xs transition duration-150 ease-in-out">
+                                                            Check Out
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            `).join('')}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            `}
+                        </div>
+                    `;
+                    break;
+                case 'createStaffUser':
+                    html = `
+                        <div class="p-6 bg-white rounded-lg shadow-md max-w-lg mx-auto">
+                            <h2 class="text-2xl font-bold mb-4 text-center text-green-700">Create Staff User</h2>
+                            <form id="createStaffUserForm" class="space-y-4">
+                                <div>
+                                    <label for="staffEmail" class="block text-sm font-medium text-gray-700">Staff Email (Username):</label>
+                                    <input type="email" id="staffEmail" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500" placeholder="e.g., staff@knp.ac.ke" required />
+                                </div>
+                                <div>
+                                    <label for="staffPassword" class="block text-sm font-medium text-gray-700">Password:</label>
+                                    <input type="password" id="staffPassword" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500" required />
+                                </div>
+                                <button type="submit" class="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition duration-150 ease-in-out">
+                                    Create Staff Account
+                                </button>
+                            </form>
+                            <p id="app-message" class="mt-4 text-center text-sm font-medium text-green-600"></p>
+                        </div>
+                    `;
+                    break;
+                default:
+                    html = '';
+            }
+            if (appContent) { // Ensure appContent is not null before setting innerHTML
+                appContent.innerHTML = html;
+                updateMessage(message); // Re-render message after content update
+                attachEventListeners(); // Re-attach event listeners after DOM update
+                updateNavButtonStyles(); // Update active nav button style
+            }
+        }
+
+        // Function to update navigation button active styles
+        function updateNavButtonStyles() {
+            document.querySelectorAll('nav button').forEach(button => {
+                button.classList.remove('bg-green-700');
+            });
+            const activeButton = document.getElementById(`nav${currentPage.charAt(0).toUpperCase() + currentPage.slice(1)}`);
+            if (activeButton) {
+                activeButton.classList.add('bg-green-700');
+            }
+        }
+
+        // Event listeners for navigation buttons (main app)
+        function setupNavListeners() {
+            document.getElementById('navRegisterVisitor').addEventListener('click', () => { currentPage = 'registerVisitor'; renderContent(); });
+            document.getElementById('navPrincipalBooking').addEventListener('click', () => { currentPage = 'principalBooking'; renderContent(); });
+            document.getElementById('navPrincipalApproval').addEventListener('click', () => { currentPage = 'principalApproval'; renderContent(); });
+            document.getElementById('navDashboard').addEventListener('click', () => { currentPage = 'dashboard'; renderContent(); });
+            document.getElementById('navVisitorLogs').addEventListener('click', () => { currentPage = 'visitorLogs'; renderContent(); });
+            document.getElementById('navCreateStaffUser').addEventListener('click', () => { currentPage = 'createStaffUser'; renderContent(); });
+            document.getElementById('logoutButton').addEventListener('click', handleLogout);
+        }
+
+        // Function to attach event listeners to dynamically rendered content
+        function attachEventListeners() {
+            // Principal Booking Form
+            const bookAppointmentForm = document.getElementById('bookAppointmentForm');
+            if (bookAppointmentForm) {
+                bookAppointmentForm.addEventListener('submit', handleBookAppointment);
+            }
+
+            // Principal Approval Buttons
+            const principalApprovalTableBody = document.getElementById('pendingApprovalsTableBody');
+            if (principalApprovalTableBody) {
+                // Remove existing listeners to prevent duplicates
+                principalApprovalTableBody.querySelectorAll('.approve-btn, .reject-btn').forEach(button => {
+                    const newButton = button.cloneNode(true);
+                    button.parentNode.replaceChild(newButton, button);
+                });
+
+                // Add listeners to new/cloned buttons
+                principalApprovalTableBody.querySelectorAll('.approve-btn').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        const id = e.target.dataset.id;
+                        const status = e.target.dataset.status;
+                        handleApproveReject(id, status);
+                    });
+                });
+                principalApprovalTableBody.querySelectorAll('.reject-btn').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        const id = e.target.dataset.id;
+                        const status = e.target.dataset.status;
+                        handleApproveReject(id, status);
+                    });
+                });
+            }
+
+            // Register Visitor Form
+            const registerVisitorForm = document.getElementById('registerVisitorForm');
+            if (registerVisitorForm) {
+                registerVisitorForm.addEventListener('submit', handleRegisterVisitor);
+            }
+
+            // Privacy Terms Modal
+            const showPrivacyTermsLink = document.getElementById('showPrivacyTerms');
+            if (showPrivacyTermsLink) {
+                showPrivacyTermsLink.addEventListener('click', (e) => {
+                    e.preventDefault(); // Prevent default link behavior
+                    showModal('privacyModal');
+                });
+            }
+
+            const closePrivacyModalButton = document.getElementById('closePrivacyModal');
+            if (closePrivacyModalButton) {
+                closePrivacyModalButton.addEventListener('click', () => {
+                    hideModal('privacyModal');
+                });
+            }
+
+            const modalCloseButton = document.getElementById('modalCloseButton');
+            if (modalCloseButton) {
+                modalCloseButton.addEventListener('click', () => {
+                    hideModal('privacyModal');
+                });
+            }
+
+            // Principal Approval Filter Buttons
+            const principalApprovalContainer = document.getElementById('principalApprovalContainer');
+            if (principalApprovalContainer) {
+                // Remove existing listeners to prevent duplicates
+                principalApprovalContainer.querySelectorAll('.filter-btn').forEach(button => {
+                    const newButton = button.cloneNode(true);
+                    button.parentNode.replaceChild(newButton, button);
+                });
+
+                // Add listeners to new/cloned buttons
+                principalApprovalContainer.querySelectorAll('.filter-btn').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        principalApprovalFilter = e.target.dataset.filter;
+                        listenForPrincipalApprovals(); // Update the Firestore listener
+                        renderContent(); // Re-render to update button styles and content
+                    });
+                });
+            }
+
+            // Dashboard Check Out Buttons
+            if (appContent) {
+                const dashboardTableBody = appContent.querySelector('#dashboard .min-w-full tbody');
+                if (dashboardTableBody) {
+                    // Remove existing listeners to prevent duplicates
+                    dashboardTableBody.querySelectorAll('.checkout-btn').forEach(button => {
+                        const newButton = button.cloneNode(true);
+                        button.parentNode.replaceChild(newButton, button);
+                    });
+
+                    dashboardTableBody.querySelectorAll('.checkout-btn').forEach(button => {
+                        button.addEventListener('click', (e) => {
+                            const visitorId = e.target.dataset.id;
+                            handleCheckOut(visitorId);
+                        });
+                    });
+                }
+            }
+
+            // Create Staff User Form
+            const createStaffUserForm = document.getElementById('createStaffUserForm');
+            if (createStaffUserForm) {
+                createStaffUserForm.addEventListener('submit', handleCreateStaffUser);
+            }
+        }
+
+        // Event listeners for login screen
+        function attachLoginEventListeners() {
+            const loginForm = document.getElementById('loginForm');
+            if (loginForm) {
+                loginForm.addEventListener('submit', handleLogin);
+            }
+        }
+
+        // Firebase Initialization and Auth
+        async function initializeFirebaseAndAuth() {
+            try {
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                // Log Firebase config and appId for debugging
+                console.log("Firebase Config:", firebaseConfig);
+                console.log("App ID:", appId);
+
+
+                onAuthStateChanged(auth, async (user) => {
+                    console.log("onAuthStateChanged triggered. User:", user); // ADDED LOG
+                    if (user) {
+                        // User is signed in.
+                        userId = user.uid;
+                        userEmail = user.email;
+                        isLoggedIn = true;
+                        isAuthReady = true; // Auth is ready and user is logged in
+                        document.getElementById('current-user-id').textContent = userId;
+                        document.getElementById('user-id-display').classList.remove('hidden');
+                        setupFirestoreListeners(); // Setup listeners after auth is ready
+                        console.log("User logged in, rendering main app."); // ADDED LOG
+                        renderMainApp(); // Show main app content
+                    } else {
+                        // User is signed out.
+                        userId = null;
+                        userEmail = null;
+                        isLoggedIn = false;
+                        isAuthReady = true; // Auth is ready, but no user logged in
+                        document.getElementById('user-id-display').classList.add('hidden');
+                        // Unsubscribe from all Firestore listeners when logged out
+                        // Added checks to ensure the unsubscribe function is actually a function
+                        if (typeof unsubscribePrincipalApprovals === 'function') unsubscribePrincipalApprovals();
+                        if (typeof unsubscribeRegisteredVisitors === 'function') unsubscribeRegisteredVisitors();
+                        if (typeof unsubscribeVisitorLogs === 'function') unsubscribeVisitorLogs();
+                        if (typeof unsubscribeBookedAppointments === 'function') unsubscribeBookedAppointments();
+                        console.log("User logged out or no user, rendering login form."); // ADDED LOG
+                        renderLoginForm(); // Show login screen
+                    }
+                });
+            } catch (error) {
+                console.error("Error initializing Firebase:", error);
+                updateLoginMessage("Error initializing application. Please try again.");
+            }
+        }
+
+        // Function to set up the listener for principal approvals based on filter
+        function listenForPrincipalApprovals() {
+            if (!db || !isAuthReady || !isLoggedIn) return; // Only fetch if logged in
+
+            // Added check to ensure the unsubscribe function is actually a function
+            if (typeof unsubscribePrincipalApprovals === 'function') {
+                unsubscribePrincipalApprovals(); // Unsubscribe from previous listener
+            }
+
+            let q;
+            if (principalApprovalFilter === 'All') {
+                q = collection(db, `artifacts/${appId}/public/data/principal_appointments`);
+            } else {
+                q = query(
+                    collection(db, `artifacts/${appId}/public/data/principal_appointments`),
+                    where('status', '==', principalApprovalFilter)
+                );
+            }
+
+            unsubscribePrincipalApprovals = onSnapshot(q, (snapshot) => {
+                pendingApprovals = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderContent(); // Re-render to update pending approvals list
+            }, (error) => console.error("Error fetching principal approvals:", error));
+        }
+
+        // Function to set up the listener for currently registered visitors
+        function listenForRegisteredVisitors() {
+            if (!db || !isAuthReady || !isLoggedIn) return; // Only fetch if logged in
+
+            // Added check to ensure the unsubscribe function is actually a function
+            if (typeof unsubscribeRegisteredVisitors === 'function') {
+                unsubscribeRegisteredVisitors(); // Unsubscribe from previous listener
+            }
+
+            const q = collection(db, `artifacts/${appId}/public/data/registered_visitors`);
+
+            unsubscribeRegisteredVisitors = onSnapshot(q, (snapshot) => {
+                registeredVisitors = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderContent(); // Re-render to update registered visitors list
+            }, (error) => console.error("Error fetching registered visitors:", error));
+        }
+
+        // Function to set up the listener for visitor logs
+        function listenForVisitorLogs() {
+            if (!db || !isAuthReady || !isLoggedIn) return; // Only fetch if logged in
+
+            // Added check to ensure the unsubscribe function is actually a function
+            if (typeof unsubscribeVisitorLogs === 'function') {
+                unsubscribeVisitorLogs(); // Unsubscribe from previous listener
+            }
+
+            const q = collection(db, `artifacts/${appId}/public/data/visitor_logs`);
+
+            unsubscribeVisitorLogs = onSnapshot(q, (snapshot) => {
+                visitorLogsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderContent(); // Re-render to update visitor logs list
+            }, (error) => console.error("Error fetching visitor logs:", error));
+        }
+
+        // Function to set up the listener for a user's own booked appointments
+        function listenForBookedAppointments() {
+            if (!db || !userId || !isAuthReady || !isLoggedIn) return; // Only fetch if logged in
+
+            // Added check to ensure the unsubscribe function is actually a function
+            if (typeof unsubscribeBookedAppointments === 'function') {
+                unsubscribeBookedAppointments(); // Unsubscribe from previous listener
+            }
+
+            const qAppointments = query(
+                collection(db, `artifacts/${appId}/users/${userId}/principal_appointments`),
+                where('bookedBy', '==', userId)
+            );
+            unsubscribeBookedAppointments = onSnapshot(qAppointments, (snapshot) => {
+                bookedAppointments = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderContent(); // Re-render to update booked appointments list
+            }, (error) => console.error("Error fetching booked appointments:", error));
+        }
+
+
+        // Setup Firestore Listeners
+        function setupFirestoreListeners() {
+            if (!db || !userId || !isAuthReady || !isLoggedIn) return; // Ensure logged in before setting up listeners
+
+            listenForBookedAppointments();
+            listenForPrincipalApprovals();
+            listenForRegisteredVisitors();
+            listenForVisitorLogs();
+        }
+
+        // Event Handlers
+        async function handleLogin(e) {
+            e.preventDefault();
+            updateLoginMessage(''); // Clear previous messages
+
+            const loginEmailInput = document.getElementById('loginEmail');
+            const loginPasswordInput = document.getElementById('loginPassword');
+
+            const email = loginEmailInput.value;
+            const password = loginPasswordInput.value;
+
+            if (!email || !password) {
+                updateLoginMessage("Please enter both email and password.");
+                return;
+            }
+
+            try {
+                console.log("Attempting login for:", email); // ADDED LOG
+                await signInWithEmailAndPassword(auth, email, password);
+                // The onAuthStateChanged listener will handle rendering the main app
+                updateLoginMessage("Login successful!"); // THIS IS THE MESSAGE THE USER SEES
+                console.log("signInWithEmailAndPassword successful, waiting for onAuthStateChanged."); // ADDED LOG
+            } catch (error) {
+                console.error("Error during login:", error);
+                let errorMessage = "Login failed. Please check your credentials.";
+                if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+                    errorMessage = "Invalid email or password.";
+                } else if (error.code === 'auth/invalid-email') {
+                    errorMessage = "The email address is not valid.";
+                } else if (error.code === 'auth/too-many-requests') {
+                    errorMessage = "Too many failed login attempts. Please try again later.";
+                } else if (error.code === 'auth/operation-not-allowed') {
+                    errorMessage = "Email/Password sign-in is not enabled. Please enable it in your Firebase project's Authentication settings.";
+                }
+                updateLoginMessage(`Error: ${errorMessage}`);
+            }
+        }
+
+        async function handleLogout() {
+            try {
+                await signOut(auth);
+                // onAuthStateChanged listener will handle rendering the login screen
+                updateMessage("Logged out successfully.");
+            } catch (error) {
+                console.error("Error during logout:", error);
+                updateMessage("Failed to log out. Please try again.");
+            }
+        }
+
+        async function handleBookAppointment(e) {
+            e.preventDefault();
+            if (!db || !userId || !isAuthReady || !isLoggedIn) {
+                updateMessage("Application not ready or not logged in. Please wait or log in.");
+                return;
+            }
+
+            const nameInput = document.getElementById('name');
+            const emailInput = document.getElementById('email');
+            const idNumberBookingInput = document.getElementById('idNumberBooking');
+            const phoneInput = document.getElementById('phone');
+            const purposeInput = document.getElementById('purpose');
+            const dateInput = document.getElementById('date');
+            const timeInput = document.getElementById('time');
+
+            const name = nameInput.value;
+            const email = emailInput.value;
+            const idNumberBooking = idNumberBookingInput.value;
+            const phone = phoneInput.value;
+            const purpose = purposeInput.value;
+            const date = dateInput.value;
+            const time = timeInput.value;
+
+            if (!name || !email || !idNumberBooking || !phone || !purpose || !date || !time) {
+                updateMessage("Please fill in all fields.");
+                return;
+            }
+
+            try {
+                const newAppointment = {
+                    name,
+                    email,
+                    idNumberBooking,
+                    phone,
+                    purpose,
+                    date,
+                    time,
+                    status: 'Pending', // Initial status
+                    bookedBy: userId, // Store who booked it
+                    bookedByEmail: userEmail, // Store email of who booked it
+                    createdAt: new Date().toISOString()
+                };
+
+                // Add to public collection for principal to see
+                await addDoc(collection(db, `artifacts/${appId}/public/data/principal_appointments`), newAppointment);
+                // Also add to user's private collection for their own viewing
+                await addDoc(collection(db, `artifacts/${appId}/users/${userId}/principal_appointments`), newAppointment);
+
+                updateMessage("Appointment booked successfully! Waiting for principal's approval.");
+                // Clear form fields
+                nameInput.value = '';
+                emailInput.value = '';
+                idNumberBookingInput.value = '';
+                phoneInput.value = '';
+                purposeInput.value = '';
+                dateInput.value = '';
+                timeInput.value = '';
+            } catch (error) {
+                console.error("Error booking appointment:", error);
+                updateMessage("Failed to book appointment. Please try again.");
+            }
+        }
+
+        async function handleApproveReject(e) { // Added 'e' parameter for consistency, though not directly used for preventDefault here
+            // e.preventDefault(); // Uncomment if this function is directly attached to a form submit button
+            if (!db || !isAuthReady || !isLoggedIn) {
+                updateMessage("Application not ready or not logged in. Please wait or log in.");
+                return;
+            }
+
+            // Ensure e.target is defined before accessing dataset
+            const appointmentId = e.target ? e.target.dataset.id : null;
+            const status = e.target ? e.target.dataset.status : null;
+
+            if (!appointmentId || !status) {
+                console.error("Missing appointment ID or status for approve/reject action.");
+                updateMessage("Error: Missing data for approval/rejection.");
+                return;
+            }
+
+            try {
+                // Update status in the public collection
+                const docRef = doc(db, `artifacts/${appId}/public/data/principal_appointments`, appointmentId);
+                await updateDoc(docRef, { status: status });
+
+                // Find the corresponding appointment in the user's private collection and update it
+                const originalAppointment = pendingApprovals.find(a => a.id === appointmentId);
+
+                if (originalAppointment && originalAppointment.bookedBy) {
+                    const q = query(
+                        collection(db, `artifacts/${appId}/users/${originalAppointment.bookedBy}/principal_appointments`),
+                        where('createdAt', '==', originalAppointment.createdAt)
+                    );
+                    const querySnapshot = await getDocs(q);
+                    if (!querySnapshot.empty) {
+                        const userDocRef = doc(db, `artifacts/${appId}/users/${originalAppointment.bookedBy}/principal_appointments`, querySnapshot.docs[0].id);
+                        await updateDoc(userDocRef, { status: status });
+                    }
+                }
+
+                updateMessage(`Appointment ${status.toLowerCase()}d.`);
+            } catch (error) {
+                console.error(`Error ${status.toLowerCase()}ing appointment:`, error);
+                updateMessage(`Failed to ${status.toLowerCase()} appointment. Please try again.`);
+            }
+        }
+
+        async function handleRegisterVisitor(e) {
+            e.preventDefault();
+            if (!db || !userId || !isAuthReady || !isLoggedIn) {
+                updateMessage("Application not ready or not logged in. Please wait or log in.");
+                return;
+            }
+
+            const fullNameInput = document.getElementById('fullName');
+            const phoneNumberInput = document.getElementById('phoneNumber');
+            const vehicleNumberPlateInput = document.getElementById('vehicleNumberPlate');
+            const idNumberInput = document.getElementById('idNumber');
+            const purposeOfVisitInput = document.getElementById('purposeOfVisit');
+            const hostNameDepartmentInput = document.getElementById('hostNameDepartment');
+            const dataPrivacyTermsCheckbox = document.getElementById('dataPrivacyTerms');
+
+            const fullName = fullNameInput.value;
+            const phoneNumber = phoneNumberInput.value;
+            const vehicleNumberPlate = vehicleNumberPlateInput.value;
+            const idNumber = idNumberInput.value;
+            const purposeOfVisit = purposeOfVisitInput.value;
+            const hostNameDepartment = hostNameDepartmentInput.value;
+            const dataPrivacyTerms = dataPrivacyTermsCheckbox.checked;
+
+            if (!fullName || !phoneNumber || !idNumber || !purposeOfVisit || !dataPrivacyTerms) {
+                updateMessage("Please fill in all required fields and agree to the data privacy terms.");
+                return;
+            }
+
+            const newVisitor = {
+                name: fullName,
+                phone: phoneNumber,
+                vehiclePlate: vehicleNumberPlate || 'N/A', // Optional field
+                idNumber: idNumber,
+                purpose: purposeOfVisit,
+                host: hostNameDepartment || 'N/A', // Optional field
+                checkInTime: new Date().toISOString(),
+                registeredBy: userId,
+                registeredByEmail: userEmail, // Store email of who registered it
+                agreedToPrivacy: dataPrivacyTerms
+            };
+
+            try {
+                // Add to the 'registered_visitors' collection (currently checked-in)
+                await addDoc(collection(db, `artifacts/${appId}/public/data/registered_visitors`), newVisitor);
+                updateMessage("Visitor registered successfully!");
+                // Clear form fields
+                fullNameInput.value = '';
+                phoneNumberInput.value = '';
+                vehicleNumberPlateInput.value = '';
+                idNumberInput.value = '';
+                purposeOfVisitInput.value = '';
+                hostNameDepartmentInput.value = '';
+                dataPrivacyTermsCheckbox.checked = false;
+            } catch (error) {
+                console.error("Error registering visitor:", error);
+                updateMessage("Failed to register visitor. Please try again.");
+            }
+        }
+
+        async function handleCheckOut(visitorId) {
+            if (!db || !isAuthReady || !isLoggedIn) {
+                updateMessage("Application not ready or not logged in. Please wait or log in.");
+                return;
+            }
+
+            try {
+                const visitorDocRef = doc(db, `artifacts/${appId}/public/data/registered_visitors`, visitorId);
+                const visitorDoc = await getDoc(visitorDocRef);
+
+                if (visitorDoc.exists()) {
+                    const visitorData = visitorDoc.data();
+                    const checkedOutVisitor = {
+                        ...visitorData,
+                        checkOutTime: new Date().toISOString(),
+                        status: 'Checked Out', // Add a status for clarity in logs
+                        checkedOutBy: userId, // Store who checked out
+                        checkedOutByEmail: userEmail // Store email of who checked out
+                    };
+
+                    // Add to visitor_logs collection
+                    await addDoc(collection(db, `artifacts/${appId}/public/data/visitor_logs`), checkedOutVisitor);
+
+                    // Delete from registered_visitors collection
+                    await deleteDoc(visitorDocRef);
+
+                    updateMessage(`Visitor ${visitorData.name} checked out successfully!`);
+                } else {
+                    updateMessage("Visitor not found for checkout.");
+                }
+            } catch (error) {
+                console.error("Error checking out visitor:", error);
+                updateMessage("Failed to check out visitor. Please try again.");
+            }
+        }
+
+        async function handleCreateStaffUser(e) {
+            e.preventDefault();
+            if (!db || !auth || !isAuthReady || !isLoggedIn) {
+                updateMessage("Application not ready or not logged in. Please wait or log in.");
+                return;
+            }
+
+            const staffEmailInput = document.getElementById('staffEmail');
+            const staffPasswordInput = document.getElementById('staffPassword');
+
+            const email = staffEmailInput.value;
+            const password = staffPasswordInput.value;
+
+            if (!email || !password) {
+                updateMessage("Please enter both email and password.");
+                return;
+            }
+
+            // Client-side password length validation
+            if (password.length < 6) {
+                updateMessage("Error: Password should be at least 6 characters long.");
+                return;
+            }
+
+            try {
+                // Create user in Firebase Authentication
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const staffUid = userCredential.user.uid;
+
+                // Store staff details in Firestore
+                await addDoc(collection(db, `artifacts/${appId}/public/data/staff_users`), {
+                    uid: staffUid,
+                    email: email,
+                    role: 'staff', // Assign a default role
+                    createdAt: new Date().toISOString(),
+                    createdBy: userId, // Record who created this staff user
+                    createdByEmail: userEmail // Record email of who created this staff user
+                });
+
+                updateMessage(`Staff user ${email} created successfully!`);
+                // Clear form fields
+                staffEmailInput.value = '';
+                staffPasswordInput.value = '';
+            } catch (error) {
+                console.error("Error creating staff user:", error);
+                let errorMessage = "Failed to create staff user. Please try again.";
+                if (error.code === 'auth/email-already-in-use') {
+                    errorMessage = "The provided email is already in use by an existing user.";
+                } else if (error.code === 'auth/invalid-email') {
+                    errorMessage = "The email address is not valid.";
+                } else if (error.code === 'auth/weak-password') {
+                    errorMessage = "Password should be at least 6 characters.";
+                } else if (error.code === 'auth/operation-not-allowed') {
+                    errorMessage = "Email/Password sign-in is not enabled. Please enable it in your Firebase project's Authentication settings.";
+                }
+                updateMessage(`Error: ${errorMessage}`);
+            }
+        }
+
+        // Modal functions
+        function showModal(modalId) {
+            document.getElementById(modalId).classList.remove('hidden');
+        }
+
+        function hideModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+        }
+
+        // Initialize the application when the DOM is fully loaded
+        window.onload = function() {
+            appContent = document.getElementById('app-content'); // Initialize appContent here
+            initializeFirebaseAndAuth();
+            // The initial render will be handled by onAuthStateChanged
+        };
+    </script>
+</body>
+</html>
