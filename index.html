@@ -8,6 +8,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts - Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!--icon image-->
+    <link rel="icon" href="KNP LOGO.jpeg" type="image/x-icon">
     <style>
         /* Custom styles for Inter font and general body styling */
         body {
@@ -64,36 +66,44 @@
     <div id="main-app-content" class="flex-grow hidden">
         <nav class="bg-green-800 p-4 shadow-md">
             <div class="container mx-auto flex flex-wrap justify-between items-center">
+                <!-- Hamburger menu button (always visible now) -->
+                <button id="hamburger-button" class="text-white text-3xl focus:outline-none mr-4">
+                    &#9776; <!-- Unicode for hamburger icon -->
+                </button>
+                <!-- KNP Logo -->
+                <img src="KNP LOGO.jpeg" alt="KNP Logo" class="h-10 w-10 mr-2 rounded-full object-cover">
                 <div class="text-white text-2xl font-bold">KNP-VMS</div>
-                <div class="flex-grow md:flex-grow-0 mt-2 md:mt-0">
-                    <ul class="flex flex-wrap space-x-4 text-white text-lg">
+
+                <!-- Navigation links container (always hidden by default, toggled by JS) -->
+                <div id="nav-links-container" class="w-full hidden flex-grow justify-center mt-2 md:mt-0">
+                    <ul class="flex flex-col space-y-2 text-white text-lg w-full">
                         <li>
-                            <button id="navRegisterVisitor" class="py-2 px-4 rounded-md transition duration-300 ease-in-out hover:bg-green-700">
+                            <button id="navRegisterVisitor" class="block w-full text-left py-2 px-4 rounded-md transition duration-300 ease-in-out hover:bg-green-700">
                                 Register Visitor
                             </button>
                         </li>
                         <li>
-                            <button id="navPrincipalBooking" class="py-2 px-4 rounded-md transition duration-300 ease-in-out hover:bg-green-700">
+                            <button id="navPrincipalBooking" class="block w-full text-left py-2 px-4 rounded-md transition duration-300 ease-in-out hover:bg-green-700">
                                 Principal Booking
                             </button>
                         </li>
                         <li>
-                            <button id="navPrincipalApproval" class="py-2 px-4 rounded-md transition duration-300 ease-in-out hover:bg-green-700">
+                            <button id="navPrincipalApproval" class="block w-full text-left py-2 px-4 rounded-md transition duration-300 ease-in-out hover:bg-green-700">
                                 Principal Approval
                             </button>
                         </li>
                         <li>
-                            <button id="navDashboard" class="py-2 px-4 rounded-md transition duration-300 ease-in-out hover:bg-green-700">
+                            <button id="navDashboard" class="block w-full text-left py-2 px-4 rounded-md transition duration-300 ease-in-out hover:bg-green-700">
                                 Dashboard
                             </button>
                         </li>
                         <li>
-                            <button id="navVisitorLogs" class="py-2 px-4 rounded-md transition duration-300 ease-in-out hover:bg-green-700">
+                            <button id="navVisitorLogs" class="block w-full text-left py-2 px-4 rounded-md transition duration-300 ease-in-out hover:bg-green-700">
                                 Visitor Logs
                             </button>
                         </li>
                         <li>
-                            <button id="navCreateStaffUser" class="py-2 px-4 rounded-md transition duration-300 ease-in-out hover:bg-green-700">
+                            <button id="navCreateStaffUser" class="block w-full text-left py-2 px-4 rounded-md transition duration-300 ease-in-out hover:bg-green-700">
                                 Create Staff User
                             </button>
                         </li>
@@ -167,10 +177,11 @@
         let message = '';
         let principalApprovalFilter = 'Pending'; // Default filter for principal approval tab
 
-        // IMPORTANT: When running locally with live-server, replace the following lines
-        // with your actual Firebase project configuration from the Firebase Console.
-        // Make sure to get the 'appId' from your firebaseConfig object.
-        const firebaseConfig = {
+        // IMPORTANT: When running locally with live-server, you MUST replace the entire
+        // 'firebaseConfig' object below with YOUR ACTUAL Firebase project configuration.
+        // Get this from your Firebase Console -> Project settings -> Your apps -> Web app.
+        // Example:
+       const firebaseConfig = {
   apiKey: "AIzaSyAthVRHTOjGf9NLSVu3o80TS1GMmPYUNaE",
   authDomain: "knp-vms-app.firebaseapp.com",
   projectId: "knp-vms-app",
@@ -393,7 +404,7 @@
                                                     <td class="py-3 px-6 text-left">${appointment.date}</td>
                                                     <td class="py-3 px-6 text-left">${appointment.time}</td>
                                                     <td class="py-3 px-6 text-left">
-                                                        <span class="py-1 px-3 rounded-full text-xs ${appointment.status === 'Pending' ? 'bg-yellow-200 text-yellow-800' : appointment.status === 'Approved' ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'}">
+                                                        <span class="py-1 px-3 rounded-full text-xs ${appointment.status === 'Pending' ? 'bg-yellow-200 text-yellow-800' : appointment.status === 'Approved' ? 'bg-green-200 text-green-800' : 'text-red-200 text-red-800'}">
                                                             ${appointment.status}
                                                         </span>
                                                     </td>
@@ -545,6 +556,30 @@
             document.getElementById('navVisitorLogs').addEventListener('click', () => { currentPage = 'visitorLogs'; renderContent(); });
             document.getElementById('navCreateStaffUser').addEventListener('click', () => { currentPage = 'createStaffUser'; renderContent(); });
             document.getElementById('logoutButton').addEventListener('click', handleLogout);
+
+            // Hamburger menu toggle
+            const hamburgerButton = document.getElementById('hamburger-button');
+            const navLinksContainer = document.getElementById('nav-links-container');
+
+            if (hamburgerButton && navLinksContainer) {
+                hamburgerButton.addEventListener('click', () => {
+                    navLinksContainer.classList.toggle('hidden');
+                    navLinksContainer.classList.toggle('flex');
+                    navLinksContainer.classList.toggle('flex-col'); // Ensure vertical stacking when open
+                });
+
+                // Close menu when a navigation item is clicked (for mobile usability)
+                navLinksContainer.querySelectorAll('button').forEach(button => {
+                    button.addEventListener('click', () => {
+                        // Only close if the menu is currently visible (i.e., not hidden)
+                        if (!navLinksContainer.classList.contains('hidden')) {
+                            navLinksContainer.classList.add('hidden');
+                            navLinksContainer.classList.remove('flex');
+                            navLinksContainer.classList.remove('flex-col');
+                        }
+                    });
+                });
+            }
         }
 
         // Function to attach event listeners to dynamically rendered content
@@ -772,19 +807,27 @@
 
         // Function to set up the listener for a user's own booked appointments
         function listenForBookedAppointments() {
-            if (!db || !userId || !isAuthReady || !isLoggedIn) return; // Only fetch if logged in
+            console.log("Attempting to listen for booked appointments...");
+            if (!db || !userId || !isAuthReady || !isLoggedIn) {
+                console.log("Conditions not met for listening to booked appointments. db:", !!db, "userId:", userId, "isAuthReady:", isAuthReady, "isLoggedIn:", isLoggedIn);
+                return; // Only fetch if logged in
+            }
+            console.log("Conditions met. User ID for booked appointments:", userId); // Log the userId
 
-            // Added check to ensure the unsubscribe function is actually a function
             if (typeof unsubscribeBookedAppointments === 'function') {
                 unsubscribeBookedAppointments(); // Unsubscribe from previous listener
+                console.log("Unsubscribed from previous booked appointments listener.");
             }
 
             const qAppointments = query(
                 collection(db, `artifacts/${appId}/users/${userId}/principal_appointments`),
                 where('bookedBy', '==', userId)
             );
+            console.log("Firestore query for booked appointments:", `artifacts/${appId}/users/${userId}/principal_appointments`, "where bookedBy == ", userId);
+
             unsubscribeBookedAppointments = onSnapshot(qAppointments, (snapshot) => {
                 bookedAppointments = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                console.log("Fetched booked appointments:", bookedAppointments); // Log fetched data
                 renderContent(); // Re-render to update booked appointments list
             }, (error) => console.error("Error fetching booked appointments:", error));
         }
@@ -833,6 +876,8 @@
                     errorMessage = "Too many failed login attempts. Please try again later.";
                 } else if (error.code === 'auth/operation-not-allowed') {
                     errorMessage = "Email/Password sign-in is not enabled. Please enable it in your Firebase project's Authentication settings.";
+                } else if (error.code === 'auth/api-key-not-valid') {
+                    errorMessage = "Firebase API Key is not valid. Please ensure your firebaseConfig has the correct API Key from your Firebase project settings.";
                 }
                 updateLoginMessage(`Error: ${errorMessage}`);
             }
@@ -912,16 +957,11 @@
             }
         }
 
-        async function handleApproveReject(e) { // Added 'e' parameter for consistency, though not directly used for preventDefault here
-            // e.preventDefault(); // Uncomment if this function is directly attached to a form submit button
+        async function handleApproveReject(appointmentId, status) {
             if (!db || !isAuthReady || !isLoggedIn) {
                 updateMessage("Application not ready or not logged in. Please wait or log in.");
                 return;
             }
-
-            // Ensure e.target is defined before accessing dataset
-            const appointmentId = e.target ? e.target.dataset.id : null;
-            const status = e.target ? e.target.dataset.status : null;
 
             if (!appointmentId || !status) {
                 console.error("Missing appointment ID or status for approve/reject action.");
