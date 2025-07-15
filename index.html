@@ -9,7 +9,8 @@
     <!-- Google Fonts - Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!--icon image-->
-    <link rel="icon" href="KNP LOGO.jpeg" type="image/x-icon">
+    <!-- Corrected KNP Logo path for Canvas environment -->
+    <link rel="icon" href="http://googleusercontent.com/file_content/4" type="image/jpeg">
     <style>
         /* Custom styles for Inter font and general body styling */
         body {
@@ -122,6 +123,7 @@
         </div>
 
         <!-- Display current userId for multi-user app identification -->
+        <!-- The 'hidden' class is added to prevent displaying the User ID -->
         <div id="user-id-display" class="fixed bottom-4 left-4 bg-gray-800 text-white p-2 rounded-md text-sm shadow-lg hidden">
             User ID: <span id="current-user-id"></span>
         </div>
@@ -168,6 +170,7 @@
         let currentPage = 'principalBooking'; // Default page after login
         let appContent = null; // Declare appContent globally
         let isLoggedIn = false; // Track login state
+        let appId = null; // Declare appId globally here
 
         // Data states (equivalent to React's useState)
         let bookedAppointments = [];
@@ -176,21 +179,6 @@
         let visitorLogsData = []; // All checked-out visitors
         let message = '';
         let principalApprovalFilter = 'Pending'; // Default filter for principal approval tab
-
-        // IMPORTANT: When running locally with live-server, you MUST replace the entire
-        // 'firebaseConfig' object below with YOUR ACTUAL Firebase project configuration.
-        // Get this from your Firebase Console -> Project settings -> Your apps -> Web app.
-        // Example:
-       const firebaseConfig = {
-  apiKey: "AIzaSyAthVRHTOjGf9NLSVu3o80TS1GMmPYUNaE",
-  authDomain: "knp-vms-app.firebaseapp.com",
-  projectId: "knp-vms-app",
-  storageBucket: "knp-vms-app.firebasestorage.app",
-  messagingSenderId: "906443986354",
-  appId: "1:906443986354:web:9e54514af8f765df9940ab",
-  measurementId: "G-GJKFBDR7N8"
-};
-        const appId = firebaseConfig.appId; // This line correctly derives appId from your firebaseConfig
 
         // To store the unsubscribe function for Firestore listeners
         // Ensure these are initialized to null globally
@@ -504,6 +492,45 @@
                         </div>
                     `;
                     break;
+                case 'visitorLogs':
+                    html = `
+                        <div class="p-6 bg-white rounded-lg shadow-md max-w-4xl mx-auto">
+                            <h2 class="text-2xl font-bold mb-4 text-center text-green-700">Visitor Logs</h2>
+                            ${visitorLogsData.length === 0 ? '<p class="text-gray-600 text-center">No visitor logs available.</p>' : `
+                                <div class="overflow-x-auto">
+                                    <table class="min-w-full bg-white rounded-lg shadow-md">
+                                        <thead>
+                                            <tr class="bg-green-100 text-green-800 uppercase text-sm leading-normal">
+                                                <th class="py-3 px-6 text-left">Name</th>
+                                                <th class="py-3 px-6 text-left">ID Number</th>
+                                                <th class="py-3 px-6 text-left">Purpose</th>
+                                                <th class="py-3 px-6 text-left">Check-in Time</th>
+                                                <th class="py-3 px-6 text-left">Check-out Time</th>
+                                                <th class="py-3 px-6 text-left">Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="text-gray-700 text-sm font-light">
+                                            ${visitorLogsData.map(log => `
+                                                <tr class="border-b border-gray-200 hover:bg-gray-100">
+                                                    <td class="py-3 px-6 text-left whitespace-nowrap">${log.name}</td>
+                                                    <td class="py-3 px-6 text-left">${log.idNumber}</td>
+                                                    <td class="py-3 px-6 text-left">${log.purpose}</td>
+                                                    <td class="py-3 px-6 text-left">${new Date(log.checkInTime).toLocaleString()}</td>
+                                                    <td class="py-3 px-6 text-left">${log.checkOutTime ? new Date(log.checkOutTime).toLocaleString() : 'N/A'}</td>
+                                                    <td class="py-3 px-6 text-left">
+                                                        <span class="py-1 px-3 rounded-full text-xs bg-green-200 text-green-800">
+                                                            ${log.status || 'Completed'}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            `).join('')}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            `}
+                        </div>
+                    `;
+                    break;
                 case 'createStaffUser':
                     html = `
                         <div class="p-6 bg-white rounded-lg shadow-md max-w-lg mx-auto">
@@ -701,6 +728,18 @@
         // Firebase Initialization and Auth
         async function initializeFirebaseAndAuth() {
             try {
+                // Hardcoded Firebase config as requested
+                const firebaseConfig = {
+  apiKey: "AIzaSyAthVRHTOjGf9NLSVu3o80TS1GMmPYUNaE",
+  authDomain: "knp-vms-app.firebaseapp.com",
+  projectId: "knp-vms-app",
+  storageBucket: "knp-vms-app.firebasestorage.app",
+  messagingSenderId: "906443986354",
+  appId: "1:906443986354:web:9e54514af8f765df9940ab",
+  measurementId: "G-GJKFBDR7N8"
+};
+                appId = firebaseConfig.appId; // Assign to the global appId variable
+
                 const app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
                 auth = getAuth(app);
@@ -718,8 +757,9 @@
                         userEmail = user.email;
                         isLoggedIn = true;
                         isAuthReady = true; // Auth is ready and user is logged in
-                        document.getElementById('current-user-id').textContent = userId;
-                        document.getElementById('user-id-display').classList.remove('hidden');
+                        // The user ID display is now permanently hidden via HTML class
+                        // document.getElementById('current-user-id').textContent = userId;
+                        // document.getElementById('user-id-display').classList.remove('hidden');
                         setupFirestoreListeners(); // Setup listeners after auth is ready
                         console.log("User logged in, rendering main app."); // ADDED LOG
                         renderMainApp(); // Show main app content
@@ -729,7 +769,8 @@
                         userEmail = null;
                         isLoggedIn = false;
                         isAuthReady = true; // Auth is ready, but no user logged in
-                        document.getElementById('user-id-display').classList.add('hidden');
+                        // The user ID display is now permanently hidden via HTML class
+                        // document.getElementById('user-id-display').classList.add('hidden');
                         // Unsubscribe from all Firestore listeners when logged out
                         // Added checks to ensure the unsubscribe function is actually a function
                         if (typeof unsubscribePrincipalApprovals === 'function') unsubscribePrincipalApprovals();
@@ -1056,16 +1097,20 @@
         }
 
         async function handleCheckOut(visitorId) {
+            console.log("handleCheckOut: Attempting to check out visitor with ID:", visitorId);
             if (!db || !isAuthReady || !isLoggedIn) {
+                console.log("handleCheckOut: Application not ready or not logged in.");
                 updateMessage("Application not ready or not logged in. Please wait or log in.");
                 return;
             }
 
             try {
                 const visitorDocRef = doc(db, `artifacts/${appId}/public/data/registered_visitors`, visitorId);
+                console.log("handleCheckOut: Attempting to get visitor document from:", visitorDocRef.path);
                 const visitorDoc = await getDoc(visitorDocRef);
 
                 if (visitorDoc.exists()) {
+                    console.log("handleCheckOut: Visitor document found:", visitorDoc.data());
                     const visitorData = visitorDoc.data();
                     const checkedOutVisitor = {
                         ...visitorData,
@@ -1076,18 +1121,25 @@
                     };
 
                     // Add to visitor_logs collection
+                    console.log("handleCheckOut: Attempting to add visitor to visitor_logs.");
                     await addDoc(collection(db, `artifacts/${appId}/public/data/visitor_logs`), checkedOutVisitor);
+                    console.log("handleCheckOut: Visitor successfully added to visitor_logs.");
 
                     // Delete from registered_visitors collection
+                    console.log("handleCheckOut: Attempting to delete visitor from registered_visitors.");
                     await deleteDoc(visitorDocRef);
+                    console.log("handleCheckOut: Visitor successfully deleted from registered_visitors.");
 
                     updateMessage(`Visitor ${visitorData.name} checked out successfully!`);
+                    // The onSnapshot listener for registered_visitors will automatically trigger renderContent()
+                    // after the deleteDoc operation is complete, causing the UI to update.
                 } else {
+                    console.log("handleCheckOut: Visitor document not found for ID:", visitorId);
                     updateMessage("Visitor not found for checkout.");
                 }
             } catch (error) {
-                console.error("Error checking out visitor:", error);
-                updateMessage("Failed to check out visitor. Please try again.");
+                console.error("handleCheckOut: Error during checkout process:", error);
+                updateMessage(`Failed to check out visitor. Error: ${error.message}`);
             }
         }
 
