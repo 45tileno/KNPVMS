@@ -187,6 +187,52 @@
         </div>
     </div>
 
+    <!-- Adjust Time Modal -->
+    <div id="adjustTimeModal" class="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg shadow-xl p-8 m-4 max-w-md w-full relative">
+            <button id="closeAdjustTimeModal" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-2xl font-bold">&times;</button>
+            <h3 class="text-2xl font-bold mb-4 text-green-700 text-center">Approve Appointment</h3>
+            <div class="text-gray-700 space-y-4">
+                <p>Do you want to adjust the appointment time?</p>
+                <div class="flex items-center space-x-4">
+                    <input type="radio" id="adjustTimeYes" name="adjustTimeOption" value="yes" class="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded" />
+                    <label for="adjustTimeYes" class="text-sm font-medium text-gray-700">Yes, adjust time</label>
+                    <input type="radio" id="adjustTimeNo" name="adjustTimeOption" value="no" class="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded" checked />
+                    <label for="adjustTimeNo" class="text-sm font-medium text-gray-700">No, approve as is</label>
+                </div>
+                <div id="newTimeContainer" class="hidden mt-4">
+                    <label for="newAppointmentTime" class="block text-sm font-medium text-gray-700">Set New Time:</label>
+                    <input type="time" id="newAppointmentTime" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500" />
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end space-x-4">
+                <button id="confirmAdjustedApprovalButton" class="bg-green-600 text-white py-2 px-6 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition duration-150 ease-in-out">
+                    Confirm Approval
+                </button>
+                <button id="cancelAdjustedApprovalButton" class="bg-gray-300 text-gray-800 py-2 px-6 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition duration-150 ease-in-out">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Checkout Confirmation Modal -->
+    <div id="checkoutConfirmModal" class="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg shadow-xl p-8 m-4 max-w-sm w-full relative">
+            <button id="closeCheckoutConfirmModal" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-2xl font-bold">&times;</button>
+            <h3 class="text-2xl font-bold mb-4 text-red-700 text-center">Confirm Check Out</h3>
+            <p class="text-gray-700 text-center mb-6">Are you sure you want to check out this visitor?</p>
+            <div class="mt-6 flex justify-end space-x-4">
+                <button id="confirmCheckoutButton" class="bg-red-600 text-white py-2 px-6 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition duration-150 ease-in-out">
+                    Confirm Check Out
+                </button>
+                <button id="cancelCheckoutButton" class="bg-gray-300 text-gray-800 py-2 px-6 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition duration-150 ease-in-out">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
 
     <!-- Firebase SDKs -->
     <script type="module">
@@ -222,6 +268,10 @@
 
         // Variable to store the ID of the appointment currently being rejected
         let currentAppointmentToRejectId = null;
+        // Variable to store the ID of the appointment currently being approved/adjusted
+        let currentAppointmentToApproveId = null;
+        // Variable to store the ID of the visitor currently being checked out
+        let currentVisitorToCheckoutId = null;
 
 
         // Function to update the message display (for general app messages)
@@ -433,14 +483,15 @@
                                                             ${appointment.status}
                                                         </span>
                                                         ${appointment.rejectionReason ? `<p class="text-xs text-red-600 mt-1">Reason: ${appointment.rejectionReason}</p>` : ''}
+                                                        ${appointment.principalFeedback ? `<p class="text-xs text-green-600 mt-1">Feedback: ${appointment.principalFeedback}</p>` : ''}
                                                     </td>
                                                     <td class="py-3 px-6 text-center">
                                                         <div class="flex item-center justify-center space-x-2">
                                                             ${appointment.status === 'Pending' ? `
-                                                                <button data-id="${appointment.id}" data-status="Approved" class="approve-btn bg-green-500 hover:bg-green-600 text-white py-1 px-3 rounded-md text-xs transition duration-150 ease-in-out">
+                                                                <button data-id="${appointment.id}" class="approve-btn bg-green-500 hover:bg-green-600 text-white py-1 px-3 rounded-md text-xs transition duration-150 ease-in-out">
                                                                     Approve
                                                                 </button>
-                                                                <button data-id="${appointment.id}" data-status="Rejected" class="reject-btn bg-red-500 hover:bg-red-600 text-white py-1 px-3 rounded-md text-xs transition duration-150 ease-in-out">
+                                                                <button data-id="${appointment.id}" class="reject-btn bg-red-500 hover:bg-red-600 text-white py-1 px-3 rounded-md text-xs transition duration-150 ease-in-out">
                                                                     Reject
                                                                 </button>
                                                             ` : `
@@ -668,8 +719,8 @@
                 principalApprovalTableBody.querySelectorAll('.approve-btn').forEach(button => {
                     button.addEventListener('click', (e) => {
                         const id = e.target.dataset.id;
-                        // Directly approve, no modal needed
-                        handleApproveReject(id, 'Approved');
+                        // Open adjust time modal for approval
+                        openAdjustTimeModal(id);
                     });
                 });
                 principalApprovalTableBody.querySelectorAll('.reject-btn').forEach(button => {
@@ -742,6 +793,38 @@
                 });
             }
 
+            // Adjust Time Modal Event Listeners
+            const adjustTimeYesRadio = document.getElementById('adjustTimeYes');
+            const adjustTimeNoRadio = document.getElementById('adjustTimeNo');
+            const newTimeContainer = document.getElementById('newTimeContainer');
+            if (adjustTimeYesRadio && adjustTimeNoRadio && newTimeContainer) {
+                adjustTimeYesRadio.addEventListener('change', () => {
+                    newTimeContainer.classList.remove('hidden');
+                });
+                adjustTimeNoRadio.addEventListener('change', () => {
+                    newTimeContainer.classList.add('hidden');
+                });
+            }
+
+            const confirmAdjustedApprovalButton = document.getElementById('confirmAdjustedApprovalButton');
+            if (confirmAdjustedApprovalButton) {
+                confirmAdjustedApprovalButton.addEventListener('click', confirmAdjustedApproval);
+            }
+
+            const cancelAdjustedApprovalButton = document.getElementById('cancelAdjustedApprovalButton');
+            if (cancelAdjustedApprovalButton) {
+                cancelAdjustedApprovalButton.addEventListener('click', () => {
+                    hideModal('adjustTimeModal');
+                });
+            }
+
+            const closeAdjustTimeModalButton = document.getElementById('closeAdjustTimeModal');
+            if (closeAdjustTimeModalButton) {
+                closeAdjustTimeModalButton.addEventListener('click', () => {
+                    hideModal('adjustTimeModal');
+                });
+            }
+
 
             // Principal Approval Filter Buttons
             const principalApprovalContainer = document.getElementById('principalApprovalContainer');
@@ -763,22 +846,48 @@
             }
 
             // Dashboard Check Out Buttons
-            if (appContent) {
-                const dashboardTableBody = appContent.querySelector('#dashboard .min-w-full tbody');
-                if (dashboardTableBody) {
-                    // Remove existing listeners to prevent duplicates
-                    dashboardTableBody.querySelectorAll('.checkout-btn').forEach(button => {
-                        const newButton = button.cloneNode(true);
-                        button.parentNode.replaceChild(newButton, button);
-                    });
+            // Select the table body specifically for the dashboard
+            const dashboardTableBody = document.querySelector('#dashboard .min-w-full tbody');
+            if (dashboardTableBody) {
+                console.log("attachEventListeners: Dashboard table body found. Attaching checkout listeners.");
+                // Remove existing listeners to prevent duplicates on re-render
+                dashboardTableBody.querySelectorAll('.checkout-btn').forEach(button => {
+                    const newButton = button.cloneNode(true);
+                    button.parentNode.replaceChild(newButton, button);
+                });
 
-                    dashboardTableBody.querySelectorAll('.checkout-btn').forEach(button => {
-                        button.addEventListener('click', (e) => {
-                            const visitorId = e.target.dataset.id;
-                            handleCheckOut(visitorId);
-                        });
+                dashboardTableBody.querySelectorAll('.checkout-btn').forEach(button => {
+                    console.log("attachEventListeners: Attaching listener to checkout button with ID:", button.dataset.id);
+                    button.addEventListener('click', (e) => {
+                        const visitorId = e.target.dataset.id;
+                        console.log("Checkout button clicked for visitor ID:", visitorId);
+                        openCheckoutConfirmModal(visitorId); // Open confirmation modal
                     });
-                }
+                });
+            } else {
+                console.log("attachEventListeners: Dashboard table body NOT found. Checkout listeners not attached.");
+            }
+
+            // Checkout Confirmation Modal Listeners
+            const confirmCheckoutButton = document.getElementById('confirmCheckoutButton');
+            if (confirmCheckoutButton) {
+                confirmCheckoutButton.addEventListener('click', confirmCheckOut);
+            }
+
+            const cancelCheckoutButton = document.getElementById('cancelCheckoutButton');
+            if (cancelCheckoutButton) {
+                cancelCheckoutButton.addEventListener('click', () => {
+                    hideModal('checkoutConfirmModal');
+                    console.log("Checkout confirmation cancelled.");
+                });
+            }
+
+            const closeCheckoutConfirmModalButton = document.getElementById('closeCheckoutConfirmModal');
+            if (closeCheckoutConfirmModalButton) {
+                closeCheckoutConfirmModalButton.addEventListener('click', () => {
+                    hideModal('checkoutConfirmModal');
+                    console.log("Checkout confirmation modal closed via X button.");
+                });
             }
 
             // Create Staff User Form
@@ -896,6 +1005,7 @@
 
             unsubscribeRegisteredVisitors = onSnapshot(q, (snapshot) => {
                 registeredVisitors = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                console.log("Registered visitors updated:", registeredVisitors); // Log fetched data
                 renderContent(); // Re-render to update registered visitors list
             }, (error) => console.error("Error fetching registered visitors:", error));
         }
@@ -913,6 +1023,7 @@
 
             unsubscribeVisitorLogs = onSnapshot(q, (snapshot) => {
                 visitorLogsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                console.log("Visitor logs updated:", visitorLogsData); // Log fetched data
                 renderContent(); // Re-render to update visitor logs list
             }, (error) => console.error("Error fetching visitor logs:", error));
         }
@@ -1139,6 +1250,82 @@
             }
         }
 
+        // Function to open the adjust time modal for approval
+        function openAdjustTimeModal(appointmentId) {
+            currentAppointmentToApproveId = appointmentId;
+            // Reset modal fields
+            document.getElementById('adjustTimeNo').checked = true; // Default to no adjustment
+            document.getElementById('newTimeContainer').classList.add('hidden');
+            document.getElementById('newAppointmentTime').value = ''; // Clear any previous time
+            showModal('adjustTimeModal');
+        }
+
+        // Function to confirm approval with or without time adjustment
+        async function confirmAdjustedApproval() {
+            if (!db || !isAuthReady || !isLoggedIn || !currentAppointmentToApproveId) {
+                updateMessage("Application not ready, not logged in, or no appointment selected for approval.");
+                return;
+            }
+
+            const adjustTimeYesRadio = document.getElementById('adjustTimeYes');
+            const newAppointmentTimeInput = document.getElementById('newAppointmentTime');
+
+            let adjustedTime = null;
+            let feedbackMessage = "Approved";
+
+            if (adjustTimeYesRadio.checked) {
+                adjustedTime = newAppointmentTimeInput.value;
+                if (!adjustedTime) {
+                    updateMessage("Please set a new time or select 'No, approve as is'.");
+                    return;
+                }
+                feedbackMessage = `Approved: Adjusted to ${adjustedTime}`;
+            }
+
+            try {
+                await updateFirestoreApproval(currentAppointmentToApproveId, adjustedTime, feedbackMessage);
+                hideModal('adjustTimeModal');
+                updateMessage(feedbackMessage);
+            } catch (error) {
+                console.error("Error confirming approval:", error);
+                updateMessage("Failed to approve appointment. Please try again.");
+            } finally {
+                currentAppointmentToApproveId = null; // Clear the stored ID
+            }
+        }
+
+        // New function to handle Firestore update for approval (with optional time adjustment)
+        async function updateFirestoreApproval(appointmentId, adjustedTime = null, feedbackMessage = "Approved") {
+            if (!db || !isAuthReady || !isLoggedIn) {
+                throw new Error("Firestore not ready or not logged in.");
+            }
+
+            const updateData = { status: 'Approved', principalFeedback: feedbackMessage };
+            if (adjustedTime) {
+                updateData.time = adjustedTime; // Update the time field if adjusted
+            }
+
+            // Update status and optional adjusted time/feedback in the public collection
+            const docRef = doc(db, `artifacts/${appId}/public/data/principal_appointments`, appointmentId);
+            await updateDoc(docRef, updateData);
+
+            // Find the corresponding appointment in the user's private collection and update it
+            const originalAppointment = pendingApprovals.find(a => a.id === appointmentId);
+
+            if (originalAppointment && originalAppointment.bookedBy) {
+                const q = query(
+                    collection(db, `artifacts/${appId}/users/${originalAppointment.bookedBy}/principal_appointments`),
+                    where('createdAt', '==', originalAppointment.createdAt)
+                );
+                const querySnapshot = await getDocs(q);
+                if (!querySnapshot.empty) {
+                    const userDocRef = doc(db, `artifacts/${appId}/users/${originalAppointment.bookedBy}/principal_appointments`, querySnapshot.docs[0].id);
+                    await updateDoc(userDocRef, updateData);
+                }
+            }
+        }
+
+
         async function handleRegisterVisitor(e) {
             e.preventDefault();
             if (!db || !userId || !isAuthReady || !isLoggedIn) {
@@ -1198,21 +1385,30 @@
             }
         }
 
-        async function handleCheckOut(visitorId) {
-            console.log("handleCheckOut: Attempting to check out visitor with ID:", visitorId);
-            if (!db || !isAuthReady || !isLoggedIn) {
-                console.log("handleCheckOut: Application not ready or not logged in.");
-                updateMessage("Application not ready or not logged in. Please wait or log in.");
+        // Function to open the checkout confirmation modal
+        function openCheckoutConfirmModal(visitorId) {
+            console.log("openCheckoutConfirmModal: Opening confirmation for visitor ID:", visitorId);
+            currentVisitorToCheckoutId = visitorId;
+            showModal('checkoutConfirmModal');
+        }
+
+        // Function to confirm checkout and update Firestore
+        async function confirmCheckOut() {
+            console.log("confirmCheckOut: Initiating checkout for visitor ID:", currentVisitorToCheckoutId);
+            if (!db || !isAuthReady || !isLoggedIn || !currentVisitorToCheckoutId) {
+                console.log("confirmCheckOut: Conditions not met for checkout. DB:", !!db, "AuthReady:", isAuthReady, "LoggedIn:", isLoggedIn, "Visitor ID:", currentVisitorToCheckoutId);
+                updateMessage("Application not ready, not logged in, or no visitor selected for checkout.");
                 return;
             }
 
             try {
+                const visitorId = currentVisitorToCheckoutId;
                 const visitorDocRef = doc(db, `artifacts/${appId}/public/data/registered_visitors`, visitorId);
-                console.log("handleCheckOut: Attempting to get visitor document from:", visitorDocRef.path);
+                console.log("confirmCheckOut: Attempting to get visitor document from:", visitorDocRef.path);
                 const visitorDoc = await getDoc(visitorDocRef);
 
                 if (visitorDoc.exists()) {
-                    console.log("handleCheckOut: Visitor document found:", visitorDoc.data());
+                    console.log("confirmCheckOut: Visitor document found. Data:", visitorDoc.data());
                     const visitorData = visitorDoc.data();
                     const checkedOutVisitor = {
                         ...visitorData,
@@ -1223,27 +1419,29 @@
                     };
 
                     // Add to visitor_logs collection
-                    console.log("handleCheckOut: Attempting to add visitor to visitor_logs.");
+                    console.log("confirmCheckOut: Adding visitor to visitor_logs collection...");
                     await addDoc(collection(db, `artifacts/${appId}/public/data/visitor_logs`), checkedOutVisitor);
-                    console.log("handleCheckOut: Visitor successfully added to visitor_logs.");
+                    console.log("confirmCheckOut: Visitor successfully added to visitor_logs.");
 
                     // Delete from registered_visitors collection
-                    console.log("handleCheckOut: Attempting to delete visitor from registered_visitors.");
+                    console.log("confirmCheckOut: Deleting visitor from registered_visitors collection...");
                     await deleteDoc(visitorDocRef);
-                    console.log("handleCheckOut: Visitor successfully deleted from registered_visitors.");
+                    console.log("confirmCheckOut: Visitor successfully deleted from registered_visitors.");
 
                     updateMessage(`Visitor ${visitorData.name} checked out successfully!`);
-                    // The onSnapshot listener for registered_visitors will automatically trigger renderContent()
-                    // after the deleteDoc operation is complete, causing the UI to update.
+                    hideModal('checkoutConfirmModal'); // Hide the modal after successful checkout
                 } else {
-                    console.log("handleCheckOut: Visitor document not found for ID:", visitorId);
+                    console.log("confirmCheckOut: Visitor document not found for ID:", visitorId);
                     updateMessage("Visitor not found for checkout.");
                 }
             } catch (error) {
-                console.error("handleCheckOut: Error during checkout process:", error);
+                console.error("confirmCheckOut: Error during checkout process:", error);
                 updateMessage(`Failed to check out visitor. Error: ${error.message}`);
+            } finally {
+                currentVisitorToCheckoutId = null; // Clear the stored ID
             }
         }
+
 
         async function handleCreateStaffUser(e) {
             e.preventDefault();
