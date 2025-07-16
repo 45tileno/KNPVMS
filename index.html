@@ -10,7 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!--icon image-->
     <!-- Corrected KNP Logo path for Canvas environment -->
-    <link rel="icon" href="http://googleusercontent.com/file_content/4" type="image/jpeg">
+    <link rel="icon" href="KNP LOGO.jpeg" type="image/jpeg">
     <style>
         /* Custom styles for Inter font and general body styling */
         body {
@@ -155,6 +155,39 @@
         </div>
     </div>
 
+    <!-- Reject Reason Modal -->
+    <div id="rejectReasonModal" class="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg shadow-xl p-8 m-4 max-w-md w-full relative">
+            <button id="closeRejectReasonModal" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-2xl font-bold">&times;</button>
+            <h3 class="text-2xl font-bold mb-4 text-green-700 text-center">Reject Appointment</h3>
+            <div class="text-gray-700 space-y-4">
+                <div>
+                    <label for="rejectionReasonSelect" class="block text-sm font-medium text-gray-700">Reason for Rejection:</label>
+                    <select id="rejectionReasonSelect" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500">
+                        <option value="">-- Select a Reason --</option>
+                        <option value="Not available">Principal not available</option>
+                        <option value="Conflicting schedule">Conflicting schedule</option>
+                        <option value="Purpose unclear">Purpose of visit unclear</option>
+                        <option value="Other">Other (please specify)</option>
+                    </select>
+                </div>
+                <div id="customReasonContainer" class="hidden">
+                    <label for="customRejectionReason" class="block text-sm font-medium text-gray-700">Custom Reason:</label>
+                    <textarea id="customRejectionReason" rows="3" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500" placeholder="Enter custom reason"></textarea>
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end space-x-4">
+                <button id="confirmRejectButton" class="bg-red-600 text-white py-2 px-6 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition duration-150 ease-in-out">
+                    Confirm Rejection
+                </button>
+                <button id="cancelRejectButton" class="bg-gray-300 text-gray-800 py-2 px-6 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition duration-150 ease-in-out">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
+
     <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
@@ -186,6 +219,10 @@
         let unsubscribeRegisteredVisitors = null;
         let unsubscribeVisitorLogs = null;
         let unsubscribeBookedAppointments = null;
+
+        // Variable to store the ID of the appointment currently being rejected
+        let currentAppointmentToRejectId = null;
+
 
         // Function to update the message display (for general app messages)
         function updateMessage(msg) {
@@ -392,9 +429,10 @@
                                                     <td class="py-3 px-6 text-left">${appointment.date}</td>
                                                     <td class="py-3 px-6 text-left">${appointment.time}</td>
                                                     <td class="py-3 px-6 text-left">
-                                                        <span class="py-1 px-3 rounded-full text-xs ${appointment.status === 'Pending' ? 'bg-yellow-200 text-yellow-800' : appointment.status === 'Approved' ? 'bg-green-200 text-green-800' : 'text-red-200 text-red-800'}">
+                                                        <span class="py-1 px-3 rounded-full text-xs ${appointment.status === 'Pending' ? 'bg-yellow-200 text-yellow-800' : appointment.status === 'Approved' ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'}">
                                                             ${appointment.status}
                                                         </span>
+                                                        ${appointment.rejectionReason ? `<p class="text-xs text-red-600 mt-1">Reason: ${appointment.rejectionReason}</p>` : ''}
                                                     </td>
                                                     <td class="py-3 px-6 text-center">
                                                         <div class="flex item-center justify-center space-x-2">
@@ -630,15 +668,15 @@
                 principalApprovalTableBody.querySelectorAll('.approve-btn').forEach(button => {
                     button.addEventListener('click', (e) => {
                         const id = e.target.dataset.id;
-                        const status = e.target.dataset.status;
-                        handleApproveReject(id, status);
+                        // Directly approve, no modal needed
+                        handleApproveReject(id, 'Approved');
                     });
                 });
                 principalApprovalTableBody.querySelectorAll('.reject-btn').forEach(button => {
                     button.addEventListener('click', (e) => {
                         const id = e.target.dataset.id;
-                        const status = e.target.dataset.status;
-                        handleApproveReject(id, status);
+                        // Open reject modal for reason
+                        openRejectModal(id);
                     });
                 });
             }
@@ -671,6 +709,39 @@
                     hideModal('privacyModal');
                 });
             }
+
+            // Reject Reason Modal Event Listeners
+            const rejectionReasonSelect = document.getElementById('rejectionReasonSelect');
+            const customReasonContainer = document.getElementById('customReasonContainer');
+            if (rejectionReasonSelect && customReasonContainer) {
+                rejectionReasonSelect.addEventListener('change', (e) => {
+                    if (e.target.value === 'Other') {
+                        customReasonContainer.classList.remove('hidden');
+                    } else {
+                        customReasonContainer.classList.add('hidden');
+                    }
+                });
+            }
+
+            const confirmRejectButton = document.getElementById('confirmRejectButton');
+            if (confirmRejectButton) {
+                confirmRejectButton.addEventListener('click', confirmRejectAppointment);
+            }
+
+            const cancelRejectButton = document.getElementById('cancelRejectButton');
+            if (cancelRejectButton) {
+                cancelRejectButton.addEventListener('click', () => {
+                    hideModal('rejectReasonModal');
+                });
+            }
+
+            const closeRejectReasonModalButton = document.getElementById('closeRejectReasonModal');
+            if (closeRejectReasonModalButton) {
+                closeRejectReasonModalButton.addEventListener('click', () => {
+                    hideModal('rejectReasonModal');
+                });
+            }
+
 
             // Principal Approval Filter Buttons
             const principalApprovalContainer = document.getElementById('principalApprovalContainer');
@@ -998,42 +1069,73 @@
             }
         }
 
-        async function handleApproveReject(appointmentId, status) {
-            if (!db || !isAuthReady || !isLoggedIn) {
-                updateMessage("Application not ready or not logged in. Please wait or log in.");
+        // Function to open the reject reason modal
+        function openRejectModal(appointmentId) {
+            currentAppointmentToRejectId = appointmentId;
+            // Reset modal fields
+            document.getElementById('rejectionReasonSelect').value = '';
+            document.getElementById('customReasonContainer').classList.add('hidden');
+            document.getElementById('customRejectionReason').value = '';
+            showModal('rejectReasonModal');
+        }
+
+        // Function to confirm rejection and update Firestore
+        async function confirmRejectAppointment() {
+            if (!db || !isAuthReady || !isLoggedIn || !currentAppointmentToRejectId) {
+                updateMessage("Application not ready, not logged in, or no appointment selected for rejection.");
                 return;
             }
 
-            if (!appointmentId || !status) {
-                console.error("Missing appointment ID or status for approve/reject action.");
-                updateMessage("Error: Missing data for approval/rejection.");
+            const rejectionReasonSelect = document.getElementById('rejectionReasonSelect');
+            const customRejectionReasonInput = document.getElementById('customRejectionReason');
+
+            let rejectionReason = rejectionReasonSelect.value;
+            if (rejectionReason === 'Other') {
+                rejectionReason = customRejectionReasonInput.value.trim();
+                if (!rejectionReason) {
+                    updateMessage("Please provide a custom reason for rejection.");
+                    return;
+                }
+            } else if (!rejectionReason) {
+                updateMessage("Please select a reason for rejection.");
                 return;
             }
 
             try {
-                // Update status in the public collection
-                const docRef = doc(db, `artifacts/${appId}/public/data/principal_appointments`, appointmentId);
-                await updateDoc(docRef, { status: status });
-
-                // Find the corresponding appointment in the user's private collection and update it
-                const originalAppointment = pendingApprovals.find(a => a.id === appointmentId);
-
-                if (originalAppointment && originalAppointment.bookedBy) {
-                    const q = query(
-                        collection(db, `artifacts/${appId}/users/${originalAppointment.bookedBy}/principal_appointments`),
-                        where('createdAt', '==', originalAppointment.createdAt)
-                    );
-                    const querySnapshot = await getDocs(q);
-                    if (!querySnapshot.empty) {
-                        const userDocRef = doc(db, `artifacts/${appId}/users/${originalAppointment.bookedBy}/principal_appointments`, querySnapshot.docs[0].id);
-                        await updateDoc(userDocRef, { status: status });
-                    }
-                }
-
-                updateMessage(`Appointment ${status.toLowerCase()}d.`);
+                await updateFirestoreRejection(currentAppointmentToRejectId, rejectionReason);
+                hideModal('rejectReasonModal');
+                updateMessage(`Appointment rejected successfully with reason: ${rejectionReason}`);
             } catch (error) {
-                console.error(`Error ${status.toLowerCase()}ing appointment:`, error);
-                updateMessage(`Failed to ${status.toLowerCase()} appointment. Please try again.`);
+                console.error("Error confirming rejection:", error);
+                updateMessage("Failed to reject appointment. Please try again.");
+            } finally {
+                currentAppointmentToRejectId = null; // Clear the stored ID
+            }
+        }
+
+        // New function to handle Firestore update for rejection
+        async function updateFirestoreRejection(appointmentId, rejectionReason) {
+            if (!db || !isAuthReady || !isLoggedIn) {
+                throw new Error("Firestore not ready or not logged in.");
+            }
+
+            // Update status and add rejection reason in the public collection
+            const docRef = doc(db, `artifacts/${appId}/public/data/principal_appointments`, appointmentId);
+            await updateDoc(docRef, { status: 'Rejected', rejectionReason: rejectionReason });
+
+            // Find the corresponding appointment in the user's private collection and update it
+            const originalAppointment = pendingApprovals.find(a => a.id === appointmentId);
+
+            if (originalAppointment && originalAppointment.bookedBy) {
+                const q = query(
+                    collection(db, `artifacts/${appId}/users/${originalAppointment.bookedBy}/principal_appointments`),
+                    where('createdAt', '==', originalAppointment.createdAt)
+                );
+                const querySnapshot = await getDocs(q);
+                if (!querySnapshot.empty) {
+                    const userDocRef = doc(db, `artifacts/${appId}/users/${originalAppointment.bookedBy}/principal_appointments`, querySnapshot.docs[0].id);
+                    await updateDoc(userDocRef, { status: 'Rejected', rejectionReason: rejectionReason });
+                }
             }
         }
 
