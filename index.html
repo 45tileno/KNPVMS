@@ -238,7 +238,8 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, query, where, onSnapshot, doc, updateDoc, getDoc, deleteDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        // Corrected: Added setDoc to the import list
+        import { getFirestore, collection, addDoc, query, where, onSnapshot, doc, updateDoc, getDoc, deleteDoc, getDocs, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // Global variables for Firebase instances and app state
         let db = null;
@@ -299,12 +300,7 @@
         function renderLoginForm() {
             document.getElementById('login-screen').classList.remove('hidden');
             document.getElementById('main-app-content').classList.add('hidden');
-            const loginSubmitButton = document.getElementById('loginSubmitButton');
-            if (loginSubmitButton) {
-                loginSubmitButton.disabled = true; // Disable by default
-            }
-            updateLoginMessage('App is initializing. Please wait...'); // Set initial message
-            // attachLoginEventListeners(); // This is called by DOMContentLoaded
+            // The login button state and message are now handled by the Firebase initialization logic
         }
 
         // Function to render the main application content
@@ -437,7 +433,10 @@
                                     ${bookedAppointments.length === 0 ? '<p class="text-gray-600">No appointments booked yet.</p>' :
                                         bookedAppointments.map(appointment => `
                                             <div class="bg-gray-50 p-3 rounded-md shadow-sm flex justify-between items-center">
-                                                <span>${appointment.name} - ${appointment.date} ${appointment.time} (<span class="${appointment.status === 'Pending' ? 'text-yellow-700' : appointment.status === 'Approved' ? 'text-green-700' : 'text-red-700'}">${appointment.status}</span>)</span>
+                                                <span>${appointment.name} - ${appointment.date} ${appointment.time} (<span class="${appointment.status === 'Pending' ? 'text-yellow-700' : appointment.status === 'Approved' ? 'text-green-700' : 'text-red-700'}">${appointment.status}</span>)
+                                                    ${appointment.status === 'Rejected' && appointment.rejectionReason ? `<br><span class="text-red-500 text-xs">Reason: ${appointment.rejectionReason}</span>` : ''}
+                                                    ${appointment.status === 'Approved' && appointment.isTimeAdjusted ? `<br><span class="text-green-500 text-xs">Adjusted to: ${appointment.time}</span>` : ''}
+                                                </span>
                                             </div>
                                         `).join('')
                                     }
@@ -668,7 +667,7 @@
             if (loginForm) {
                 loginForm.onsubmit = async (e) => {
                     e.preventDefault();
-                    // This check is now primarily for user experience, as the button should be disabled
+                    // This check is now primarily for user experience, as the button should be disabled by default
                     if (!isAuthReady || !auth) {
                         updateLoginMessage('App is still initializing. Please wait a moment and try again.');
                         console.warn("Login attempt before Firebase Auth is fully ready.");
@@ -972,12 +971,15 @@
                 if (confirmAdjustedApprovalButton) {
                     confirmAdjustedApprovalButton.onclick = async () => {
                         let updatedTime = null;
+                        let timeAdjustedFlag = false; // New flag
+
                         if (adjustTimeYes.checked) {
                             updatedTime = newAppointmentTime.value.trim();
                             if (!updatedTime) {
                                 updateMessage('Please set a new appointment time.');
                                 return;
                             }
+                            timeAdjustedFlag = true; // Set flag if time is adjusted
                         }
 
                         if (currentAppointmentToApproveId && db) {
@@ -992,6 +994,8 @@
                                 if (updatedTime) {
                                     updateData.time = updatedTime;
                                 }
+                                updateData.isTimeAdjusted = timeAdjustedFlag; // Add the new flag
+
                                 await updateDoc(docRef, updateData);
                                 updateMessage('Appointment approved successfully.');
                                 document.getElementById('adjustTimeModal').classList.add('hidden');
@@ -1327,34 +1331,15 @@
                             console.log("Signed in with custom token:", userId);
                         } catch (error) {
                             console.error("Error signing in with custom token:", error);
-                            // Fallback to anonymous if custom token fails
-                            try {
-                                const userCredential = await signInAnonymously(auth);
-                                userId = userCredential.user.uid;
-                                userEmail = 'Anonymous';
-                                isLoggedIn = true;
-                                console.log("Signed in anonymously:", userId);
-                            } catch (anonError) {
-                                console.error("Error signing in anonymously:", anonError);
-                                updateLoginMessage(`Authentication failed: ${anonError.message}`);
-                                // If even anonymous sign-in fails, keep login button disabled
-                                return;
-                            }
+                            updateLoginMessage(`Authentication failed: ${error.message}. Please log in with a registered account.`);
+                            isLoggedIn = false; // Ensure not logged in
+                            // Do NOT fall back to anonymous sign-in here.
                         }
                     } else {
-                        // If no custom token, sign in anonymously
-                        try {
-                            const userCredential = await signInAnonymously(auth);
-                            userId = userCredential.user.uid;
-                            userEmail = 'Anonymous';
-                            isLoggedIn = true;
-                            console.log("Signed in anonymously (no custom token):", userId);
-                        } catch (anonError) {
-                            console.error("Error signing in anonymously:", anonError);
-                            updateLoginMessage(`Authentication failed: ${anonError.message}`);
-                            // If even anonymous sign-in fails, keep login button disabled
-                            return;
-                        }
+                        // If no custom token, user must log in with a registered account.
+                        console.log("No initial auth token provided. User must log in with registered account.");
+                        updateLoginMessage("Please log in with a registered account.");
+                        isLoggedIn = false; // Ensure not logged in
                     }
 
                     isAuthReady = true; // Set global flag for auth readiness
@@ -1365,9 +1350,14 @@
 
                     // Enable login button and clear message after auth is ready
                     const loginSubmitButton = document.getElementById('loginSubmitButton');
+                    const loginMessageElement = document.getElementById('login-message'); // Get reference
                     if (loginSubmitButton) {
                         loginSubmitButton.disabled = false;
-                        updateLoginMessage('Ready to log in.'); // Clear the "initializing" message
+                        if (!isLoggedIn) { // Only clear and set "Ready to log in" if not already logged in
+                            if (loginMessageElement) loginMessageElement.textContent = 'Ready to log in.';
+                        } else {
+                            if (loginMessageElement) loginMessageElement.textContent = ''; // Clear message if already logged in
+                        }
                     }
 
                     if (isLoggedIn) {
@@ -1384,21 +1374,24 @@
                     renderLoginForm();
                     // Re-enable login button on logout
                     const loginSubmitButton = document.getElementById('loginSubmitButton');
+                    const loginMessageElement = document.getElementById('login-message'); // Get reference
                     if (loginSubmitButton) {
                         loginSubmitButton.disabled = false;
-                        updateLoginMessage('Logged out. Please log in.');
+                        if (loginMessageElement) loginMessageElement.textContent = 'Logged out. Please log in.';
                     }
                 }
             });
         } else {
             console.error("Firebase config not found. App will not function correctly.");
-            updateLoginMessage("Firebase configuration missing. Please provide it for full functionality.");
-            // Keep login button disabled if Firebase config is missing
-            const loginSubmitButton = document.getElementById('loginSubmitButton');
-            if (loginSubmitButton) {
-                loginSubmitButton.disabled = true;
-            }
-            renderLoginForm(); // Show login screen but it won't work
+            // Directly update the login message and disable button if config is missing
+            document.addEventListener('DOMContentLoaded', () => {
+                const loginSubmitButton = document.getElementById('loginSubmitButton');
+                const loginMessageElement = document.getElementById('login-message');
+                if (loginSubmitButton) loginSubmitButton.disabled = true;
+                if (loginMessageElement) loginMessageElement.textContent = "Firebase configuration missing. App will not function correctly.";
+                document.getElementById('login-screen').classList.remove('hidden');
+                document.getElementById('main-app-content').classList.add('hidden');
+            });
         }
 
         // Get the app-content div once the DOM is loaded
@@ -1407,11 +1400,15 @@
             if (!appContent) {
                 console.error("app-content div not found!");
             }
-            // Initial render of login form with disabled button and initializing message
-            renderLoginForm();
-            // attachLoginEventListeners is now called here to ensure the form's submit handler is set up early.
-            // The handler itself checks `isAuthReady`.
+            // Initial state for login screen: disabled button and initializing message
+            const loginSubmitButton = document.getElementById('loginSubmitButton');
+            const loginMessageElement = document.getElementById('login-message');
+            if (loginSubmitButton) loginSubmitButton.disabled = true;
+            if (loginMessageElement) loginMessageElement.textContent = 'App is initializing. Please wait...';
+
+            // Attach login event listeners early
             attachLoginEventListeners();
+            // The display of login/main app is now solely managed by onAuthStateChanged
         });
     </script>
 </body>
